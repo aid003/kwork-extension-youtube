@@ -18,11 +18,23 @@
     "{{chrome}}.service_worker": "src/background.ts",
     "{{firefox}}.scripts": ["src/background.ts"]
   },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/watch?*"],
+      "js": ["src/content.ts"]
+    }
+  ],
   "{{chrome}}.web_accessible_resources": [{
     "resources": ["welcome.html"],
     "matches": ["<all_urls>"]
   }],
   "{{firefox}}.web_accessible_resources": [
     "welcome.html"
+  ],
+  "permissions": [
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*"
   ]
 }
