@@ -1,5 +1,96 @@
 console.log("Content script loaded for YouTube");
 
+interface DropdownOption {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+const languages: DropdownOption[] = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
+  { value: 'fr', label: 'Français' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'pt', label: 'Português' }
+];
+
+const detailLevels: DropdownOption[] = [
+  { value: 'concise', label: 'Concise', description: 'Main points only' },
+  { value: 'standard', label: 'Standard', description: 'Key moments with context' },
+  { value: 'detailed', label: 'Detailed', description: 'Full chronological breakdown' }
+];
+
+function createDropdown(options: DropdownOption[], initialValue: string, icon: string) {
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ai-dropdown';
+
+  const selectedOption = options.find(opt => opt.value === initialValue) || options[0];
+  
+  const button = document.createElement('button');
+  button.className = 'ai-dropdown-button';
+  button.innerHTML = `
+    <span class="ai-icon">${icon}</span>
+    ${selectedOption.label}
+    <span class="ai-icon">▼</span>
+  `;
+
+  const content = document.createElement('div');
+  content.className = 'ai-dropdown-content';
+
+  options.forEach(option => {
+    const item = document.createElement('div');
+    item.className = 'ai-dropdown-item' + (option.value === initialValue ? ' selected' : '');
+    item.innerHTML = `
+      ${option.description ? `
+        <div>
+          <div>${option.label}</div>
+          <div style="font-size: 12px; color: rgba(255,255,255,0.7)">${option.description}</div>
+        </div>
+      ` : option.label}
+    `;
+
+    item.addEventListener('click', () => {
+      // Update button text
+      button.innerHTML = `
+        <span class="ai-icon">${icon}</span>
+        ${option.label}
+        <span class="ai-icon">▼</span>
+      `;
+      
+      // Update selected state
+      content.querySelectorAll('.ai-dropdown-item').forEach(el => {
+        el.classList.remove('selected');
+      });
+      item.classList.add('selected');
+      
+      // Close dropdown
+      dropdown.classList.remove('active');
+    });
+
+    content.appendChild(item);
+  });
+
+  // Toggle dropdown
+  button.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('active');
+    
+    // Close other dropdowns
+    document.querySelectorAll('.ai-dropdown').forEach(el => {
+      if (el !== dropdown) el.classList.remove('active');
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('active');
+  });
+
+  dropdown.appendChild(button);
+  dropdown.appendChild(content);
+  return dropdown;
+}
+
 function createSummarizer() {
   const container = document.createElement('div');
   container.id = 'ai-video-summarizer';
@@ -15,22 +106,10 @@ function createSummarizer() {
   controls.className = 'ai-summarizer-controls';
 
   // Language Dropdown
-  const langDropdown = document.createElement('button');
-  langDropdown.className = 'ai-dropdown-button';
-  langDropdown.innerHTML = `
-    <span class="ai-icon">🌐</span>
-    English
-    <span class="ai-icon">▼</span>
-  `;
+  const langDropdown = createDropdown(languages, 'en', '🌐');
 
   // Detail Level Dropdown
-  const detailDropdown = document.createElement('button');
-  detailDropdown.className = 'ai-dropdown-button';
-  detailDropdown.innerHTML = `
-    <span class="ai-icon">📋</span>
-    Detailed
-    <span class="ai-icon">▼</span>
-  `;
+  const detailDropdown = createDropdown(detailLevels, 'detailed', '📋');
 
   // Buttons
   const summarizeBtn = document.createElement('button');
