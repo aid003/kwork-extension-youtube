@@ -21,7 +21,8 @@
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/watch?*"],
-      "js": ["src/content.ts"]
+      "js": ["src/content.ts"],
+      "css": ["src/content.css"]
     }
   ],
   "{{chrome}}.web_accessible_resources": [{
@@ -32,8 +33,7 @@
     "welcome.html"
   ],
   "permissions": [
-    "tabs",
-    "scripting"
+    "tabs"
   ],
   "host_permissions": [
     "*://*.youtube.com/*"
