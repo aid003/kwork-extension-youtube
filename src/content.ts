@@ -21,7 +21,6 @@ function injectSquare() {
     relatedSection.insertAdjacentElement('afterbegin', square);
     console.log('Square injected successfully');
   } else {
-    // If element not found, try again after a short delay
     setTimeout(injectSquare, 1000);
   }
 }

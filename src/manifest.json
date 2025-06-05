@@ -32,7 +32,8 @@
     "welcome.html"
   ],
   "permissions": [
-    "tabs"
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "*://*.youtube.com/*"
