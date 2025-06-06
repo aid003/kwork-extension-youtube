@@ -45,10 +45,10 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
         <span class="checkmark" style="width: 16px; text-align: center;">${option.value === initialValue ? '✓' : ''}</span>
         ${option.description ? `
           <div style="flex: 1;">
-            <div>${option.label}</div>
+            <div class="title">${option.label}</div>
             <div class="description">${option.description}</div>
           </div>
-        ` : `<div style="flex: 1;">${option.label}</div>`}
+        ` : `<div class="title" style="flex: 1;">${option.label}</div>`}
       </div>
     `;
 
@@ -56,7 +56,7 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
       // Update button text
       button.innerHTML = `
         <span class="ai-icon">${icon}</span>
-        ${option.label}
+        <span>${option.label}</span>
         <span class="ai-icon">▼</span>
       `;
       
@@ -188,20 +188,16 @@ function injectSummarizer() {
     relatedSection.insertAdjacentElement('afterbegin', summarizer);
     console.log('Summarizer injected successfully');
   } else {
-    // If element not found, try again after a short delay
     setTimeout(injectSummarizer, 1000);
   }
 }
 
-// Function to handle navigation
 function handleNavigation() {
-  // Remove existing summarizer if it exists
   const existingSummarizer = document.getElementById('ai-video-summarizer');
   if (existingSummarizer) {
     existingSummarizer.remove();
   }
   
-  // Start new injection
   injectSummarizer();
 }
 
