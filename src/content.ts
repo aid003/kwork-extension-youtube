@@ -31,9 +31,7 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
   button.innerHTML = `
     <span class="ai-icon">${icon}</span>
     ${selectedOption.label}
-    <span class="ai-icon arrow">
-      <img src="${chrome.runtime.getURL('public/arrow-down.svg')}" alt="arrow" />
-    </span>
+    <span class="ai-icon">▼</span>
   `;
 
   const content = document.createElement('div');
@@ -43,12 +41,15 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
     const item = document.createElement('div');
     item.className = 'ai-dropdown-item' + (option.value === initialValue ? ' selected' : '');
     item.innerHTML = `
-      ${option.description ? `
-        <div>
-          <div>${option.label}</div>
-          <div style="font-size: 12px; color: rgba(255,255,255,0.7)">${option.description}</div>
-        </div>
-      ` : option.label}
+      <div style="display: flex; align-items: center; width: 100%;">
+        <span class="checkmark" style="width: 16px; text-align: center;">${option.value === initialValue ? '✓' : ''}</span>
+        ${option.description ? `
+          <div style="flex: 1;">
+            <div>${option.label}</div>
+            <div class="description">${option.description}</div>
+          </div>
+        ` : `<div style="flex: 1;">${option.label}</div>`}
+      </div>
     `;
 
     item.addEventListener('click', () => {
@@ -56,16 +57,24 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
       button.innerHTML = `
         <span class="ai-icon">${icon}</span>
         ${option.label}
-        <span class="ai-icon arrow">
-          <img src="${chrome.runtime.getURL('public/arrow-down.svg')}" alt="arrow" />
-        </span>
+        <span class="ai-icon">▼</span>
       `;
       
-      // Update selected state
+      // Update selected state and checkmark
       content.querySelectorAll('.ai-dropdown-item').forEach(el => {
         el.classList.remove('selected');
+        // Update checkmark
+        const checkmarkSpan = el.querySelector('.checkmark');
+        if (checkmarkSpan) {
+          checkmarkSpan.textContent = '';
+        }
       });
       item.classList.add('selected');
+      // Add checkmark to newly selected item
+      const checkmarkSpan = item.querySelector('.checkmark');
+      if (checkmarkSpan) {
+        checkmarkSpan.textContent = '✓';
+      }
       
       // Close dropdown
       dropdown.classList.remove('active');
@@ -118,6 +127,7 @@ function createSummarizer() {
 
   // Detail Level Dropdown
   const detailDropdown = createDropdown(detailLevels, 'detailed', '📋');
+  detailDropdown.style.marginLeft = '15px';
 
   firstRow.appendChild(langDropdown);
   firstRow.appendChild(detailDropdown);
@@ -125,10 +135,14 @@ function createSummarizer() {
   // Second row - Summarize and Timestamps buttons
   const secondRow = document.createElement('div');
   secondRow.className = 'ai-controls-row';
+  secondRow.style.display = 'flex';
+  secondRow.style.gap = '12px';
+  secondRow.style.width = '100%';
 
   // Buttons
   const summarizeBtn = document.createElement('button');
   summarizeBtn.className = 'ai-button ai-button-primary';
+  summarizeBtn.style.flex = '1';
   summarizeBtn.innerHTML = `
     <span class="ai-icon">✨</span>
     Summarize
@@ -136,6 +150,7 @@ function createSummarizer() {
 
   const timestampsBtn = document.createElement('button');
   timestampsBtn.className = 'ai-button';
+  timestampsBtn.style.flex = '1';
   timestampsBtn.innerHTML = `
     <span class="ai-icon">⏱️</span>
     Timestamps
