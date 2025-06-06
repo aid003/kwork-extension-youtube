@@ -20,20 +20,22 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://*.youtube.com/watch?*"],
+      "matches": ["*://*.youtube.com/*"],
       "js": ["src/content.ts"],
       "css": ["src/content.css"]
     }
   ],
   "{{chrome}}.web_accessible_resources": [{
-    "resources": ["welcome.html"],
+    "resources": ["welcome.html", "public/arrow-down.svg"],
     "matches": ["<all_urls>"]
   }],
   "{{firefox}}.web_accessible_resources": [
-    "welcome.html"
+    "welcome.html",
+    "public/arrow-down.svg"
   ],
   "permissions": [
-    "tabs"
+    "activeTab",
+    "storage"
   ],
   "host_permissions": [
     "*://*.youtube.com/*"

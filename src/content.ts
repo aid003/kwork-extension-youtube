@@ -31,7 +31,9 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
   button.innerHTML = `
     <span class="ai-icon">${icon}</span>
     ${selectedOption.label}
-    <span class="ai-icon">▼</span>
+    <span class="ai-icon arrow">
+      <img src="${chrome.runtime.getURL('public/arrow-down.svg')}" alt="arrow" />
+    </span>
   `;
 
   const content = document.createElement('div');
@@ -54,7 +56,9 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
       button.innerHTML = `
         <span class="ai-icon">${icon}</span>
         ${option.label}
-        <span class="ai-icon">▼</span>
+        <span class="ai-icon arrow">
+          <img src="${chrome.runtime.getURL('public/arrow-down.svg')}" alt="arrow" />
+        </span>
       `;
       
       // Update selected state
@@ -105,11 +109,22 @@ function createSummarizer() {
   const controls = document.createElement('div');
   controls.className = 'ai-summarizer-controls';
 
+  // First row - Language and Detail dropdowns
+  const firstRow = document.createElement('div');
+  firstRow.className = 'ai-controls-row';
+
   // Language Dropdown
   const langDropdown = createDropdown(languages, 'en', '🌐');
 
   // Detail Level Dropdown
   const detailDropdown = createDropdown(detailLevels, 'detailed', '📋');
+
+  firstRow.appendChild(langDropdown);
+  firstRow.appendChild(detailDropdown);
+
+  // Second row - Summarize and Timestamps buttons
+  const secondRow = document.createElement('div');
+  secondRow.className = 'ai-controls-row';
 
   // Buttons
   const summarizeBtn = document.createElement('button');
@@ -126,6 +141,9 @@ function createSummarizer() {
     Timestamps
   `;
 
+  secondRow.appendChild(summarizeBtn);
+  secondRow.appendChild(timestampsBtn);
+
   // Input
   const input = document.createElement('input');
   input.type = 'text';
@@ -133,10 +151,8 @@ function createSummarizer() {
   input.placeholder = 'Ask about the video...';
 
   // Append elements
-  controls.appendChild(langDropdown);
-  controls.appendChild(detailDropdown);
-  controls.appendChild(summarizeBtn);
-  controls.appendChild(timestampsBtn);
+  controls.appendChild(firstRow);
+  controls.appendChild(secondRow);
   
   container.appendChild(header);
   container.appendChild(controls);
