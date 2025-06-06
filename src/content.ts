@@ -162,10 +162,20 @@ function createSummarizer() {
   secondRow.appendChild(timestampsBtn);
 
   // Input
+  const inputContainer = document.createElement('div');
+  inputContainer.className = 'ai-input-container';
+
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'ai-input';
   input.placeholder = 'Ask about the video...';
+
+  const sendButton = document.createElement('button');
+  sendButton.className = 'ai-send-button';
+  sendButton.innerHTML = `<img src="${browser.runtime.getURL("button-send.svg")}"/>`;
+
+  inputContainer.appendChild(input);
+  inputContainer.appendChild(sendButton);
 
   // Append elements
   controls.appendChild(firstRow);
@@ -173,7 +183,7 @@ function createSummarizer() {
   
   container.appendChild(header);
   container.appendChild(controls);
-  container.appendChild(input);
+  container.appendChild(inputContainer);
 
   return container;
 }
