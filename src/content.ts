@@ -31,9 +31,9 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
   const button = document.createElement('button');
   button.className = 'ai-dropdown-button';
   button.innerHTML = `
-    <span class="ai-icon">${icon}</span>
+    <span class="ai-icon-left">${icon}</span>
     ${selectedOption.label}
-    <span class="ai-icon">▼</span>
+    <span class="ai-icon-right arrow-icon"><img src="${browser.runtime.getURL("arrow-down.svg")}"/></span>
   `;
 
   const content = document.createElement('div');
@@ -57,9 +57,9 @@ function createDropdown(options: DropdownOption[], initialValue: string, icon: s
     item.addEventListener('click', () => {
       // Update button text
       button.innerHTML = `
-        <span class="ai-icon">${icon}</span>
+        <span class="ai-icon-left">${icon}</span>
         <span>${option.label}</span>
-        <span class="ai-icon">▼</span>
+        <span class="ai-icon-right arrow-icon"><img src="${browser.runtime.getURL("arrow-down.svg")}"/></span>
       `;
       
       // Update selected state and checkmark

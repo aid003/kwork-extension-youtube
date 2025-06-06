@@ -26,11 +26,11 @@
     }
   ],
   "{{chrome}}.web_accessible_resources": [{
-    "resources": ["welcome.html", "language.svg", "settings.svg", "arrow-down.svg"],
+    "resources": ["welcome.html", "language.svg", "settings.svg", "arrow-down.svg", "button-send.svg"],
     "matches": ["<all_urls>"]
   }],
   "{{firefox}}.web_accessible_resources": [
-    "welcome.html", "language.svg", "settings.svg", "arrow-down.svg"
+    "welcome.html", "language.svg", "settings.svg", "arrow-down.svg", "button-send.svg"
   ],
   "permissions": [
     "activeTab",

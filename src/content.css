@@ -52,6 +52,14 @@
   font-size: 12px;
 }
 
+.ai-dropdown-button .arrow-icon {
+  transition: transform 0.2s ease;
+}
+
+.ai-dropdown.active .arrow-icon {
+  transform: rotate(180deg);
+}
+
 .ai-dropdown-content {
   display: none;
   position: absolute;
@@ -164,13 +172,21 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Icons */
-.ai-icon img {
-  width: 17px;
-  height: 17px;
+
+.ai-icon-left {
+  width: 16px;
+  height: 16px;
   margin-right: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: white;
+}
+
+.ai-icon-right {
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 } 
