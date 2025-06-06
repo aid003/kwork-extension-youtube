@@ -1,3 +1,5 @@
+import browser from "webextension-polyfill";
+
 console.log("Content script loaded for YouTube");
 
 interface DropdownOption {
@@ -123,10 +125,10 @@ function createSummarizer() {
   firstRow.className = 'ai-controls-row';
 
   // Language Dropdown
-  const langDropdown = createDropdown(languages, 'en', '🌐');
+  const langDropdown = createDropdown(languages, 'en', `<img src="${browser.runtime.getURL("language.svg")}"/>`);
 
   // Detail Level Dropdown
-  const detailDropdown = createDropdown(detailLevels, 'detailed', '📋');
+  const detailDropdown = createDropdown(detailLevels, 'detailed', `<img src="${browser.runtime.getURL("settings.svg")}"/>`);
   detailDropdown.style.marginLeft = '15px';
 
   firstRow.appendChild(langDropdown);

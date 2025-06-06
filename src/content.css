@@ -28,7 +28,7 @@
 }
 
 .ai-dropdown-button {
-  background-color: #272727;
+  background-color: #1E1E1E;
   border: none;
   color: white;
   padding: 0 16px;
@@ -39,7 +39,7 @@
   gap: 6px;
   font-size: 12px;
   height: 23px;
-  width: 105px;
+  min-width: 105px;
   justify-content: space-between;
 }
 
@@ -165,10 +165,12 @@
 }
 
 /* Icons */
-.ai-icon {
-  width: 16px;
-  height: 16px;
+.ai-icon img {
+  width: 17px;
+  height: 17px;
+  margin-right: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: white;
 } 
