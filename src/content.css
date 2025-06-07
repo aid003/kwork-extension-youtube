@@ -135,49 +135,98 @@
   display: inline-block;
 }
 
-.ai-button {
-  background-color: #272727;
-  border: none;
-  color: white;
-  padding: 8px 24px;
-  border-radius: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.ai-button:hover {
-  background-color: #333333;
-}
-
-.ai-button-primary {
-  background-color: #272727;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
 .ai-input-container {
   position: relative;
-  width: 100%;
   display: flex;
   align-items: center;
 }
 
 .ai-input {
-  background-color: #272727;
+  width: 100%;
+  background: #1E1E1E;
   border: none;
   border-radius: 20px;
-  color: white;
   padding: 8px 16px;
+  padding-right: 45px;
+  color: white;
   font-size: 14px;
-  width: 100%;
-  padding-right: 40px; /* Место для кнопки */
 }
 
-.ai-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+.ai-input.loading {
+  padding-left: 15px;
+}
+
+.ai-input:disabled {
+  color: #888;
+  background: #1a1a1a;
+}
+
+.ai-send-button {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+
+.ai-send-button.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ai-loading-spinner {
+  position: absolute;
+  left: 12px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top-color: #f1c40f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+
+.ai-loading-spinner.visible {
+  opacity: 1;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ai-button {
+  background-color: #1E1E1E;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s;
+}
+
+.ai-button:hover {
+  background-color: #2a2a2a;
+}
+
+.ai-button.selected {
+  background-color: #f1c40f;
+  color: black;
+}
+
+.ai-button .ai-icon {
+  font-size: 16px;
 }
 
 .ai-icon-left {
@@ -194,18 +243,6 @@
   height: 16px;
   margin-left: 2px;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ai-send-button {
-  position: absolute;
-  right: 0px;
-  background: none;
-  border: none;
-  padding: 6px;
-  cursor: pointer;
-  display: flex;
   align-items: center;
   justify-content: center;
 }

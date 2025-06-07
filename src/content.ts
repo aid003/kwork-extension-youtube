@@ -141,9 +141,11 @@ function createSummarizer() {
   secondRow.style.gap = '12px';
   secondRow.style.width = '100%';
 
+  let selectedMode: 'summarize' | 'timestamps' | null = null;
+
   // Buttons
   const summarizeBtn = document.createElement('button');
-  summarizeBtn.className = 'ai-button ai-button-primary';
+  summarizeBtn.className = 'ai-button';
   summarizeBtn.style.flex = '1';
   summarizeBtn.innerHTML = `
     <span class="ai-icon">✨</span>
@@ -158,12 +160,30 @@ function createSummarizer() {
     Timestamps
   `;
 
+  // Button click handlers
+  summarizeBtn.addEventListener('click', () => {
+    summarizeBtn.classList.toggle('selected');
+    timestampsBtn.classList.remove('selected');
+    selectedMode = summarizeBtn.classList.contains('selected') ? 'summarize' : null;
+  });
+
+  timestampsBtn.addEventListener('click', () => {
+    timestampsBtn.classList.toggle('selected');
+    summarizeBtn.classList.remove('selected');
+    selectedMode = timestampsBtn.classList.contains('selected') ? 'timestamps' : null;
+  });
+
   secondRow.appendChild(summarizeBtn);
   secondRow.appendChild(timestampsBtn);
 
   // Input
   const inputContainer = document.createElement('div');
   inputContainer.className = 'ai-input-container';
+
+  // Loading spinner
+  const loadingSpinner = document.createElement('div');
+  loadingSpinner.className = 'ai-loading-spinner';
+  inputContainer.appendChild(loadingSpinner);
 
   const input = document.createElement('input');
   input.type = 'text';
@@ -173,6 +193,42 @@ function createSummarizer() {
   const sendButton = document.createElement('button');
   sendButton.className = 'ai-send-button';
   sendButton.innerHTML = `<img src="${browser.runtime.getURL("button-send.svg")}"/>`;
+
+  // Send button click handler
+  sendButton.addEventListener('click', async () => {
+    if (!selectedMode) {
+      alert('Please select either Summarize or Timestamps mode');
+      return;
+    }
+
+    // Show loading state
+    sendButton.classList.add('hidden');
+    loadingSpinner.classList.add('visible');
+    input.disabled = true;
+    input.classList.add('loading');
+    const originalPlaceholder = input.placeholder;
+    input.placeholder = '';
+    input.value = '          Generating summary...'; // Added extra spaces for padding
+
+    try {
+      // Here you would make your API call
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulated delay
+      
+      // Handle response...
+      
+    } catch (error) {
+      console.error('Error:', error);
+      alert('An error occurred while processing your request');
+    } finally {
+      // Reset loading state
+      sendButton.classList.remove('hidden');
+      loadingSpinner.classList.remove('visible');
+      input.disabled = false;
+      input.classList.remove('loading');
+      input.value = '';
+      input.placeholder = originalPlaceholder;
+    }
+  });
 
   inputContainer.appendChild(input);
   inputContainer.appendChild(sendButton);
