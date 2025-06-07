@@ -141,7 +141,7 @@ function createSummarizer() {
   secondRow.style.gap = '12px';
   secondRow.style.width = '100%';
 
-  let selectedMode: 'summarize' | 'timestamps' | null = null;
+  let selectedMode: 'summarize' | 'timestamps' | 'question' | null = null;
 
   // Buttons
   const summarizeBtn = document.createElement('button');
@@ -196,9 +196,14 @@ function createSummarizer() {
 
   // Send button click handler
   sendButton.addEventListener('click', async () => {
-    if (!selectedMode) {
-      alert('Please select either Summarize or Timestamps mode');
-      return;
+    // For question mode, we need text input
+    if (!selectedMode && !input.value.trim()) {
+      return; // Don't do anything if no mode selected and input is empty
+    }
+
+    // If no mode is selected and there's text in input, treat it as a question
+    if (!selectedMode && input.value.trim()) {
+      selectedMode = 'question';
     }
 
     // Show loading state
@@ -208,7 +213,21 @@ function createSummarizer() {
     input.classList.add('loading');
     const originalPlaceholder = input.placeholder;
     input.placeholder = '';
-    input.value = '          Generating summary...'; // Added extra spaces for padding
+
+    let loadingText;
+    switch (selectedMode) {
+      case 'timestamps':
+        loadingText = '          Loading timestamps...';
+        break;
+      case 'summarize':
+        loadingText = '          Generating summary...';
+        break;
+      case 'question':
+      default:
+        loadingText = '          Getting your answer...';
+        break;
+    }
+    input.value = loadingText;
 
     try {
       // Here you would make your API call
@@ -227,6 +246,10 @@ function createSummarizer() {
       input.classList.remove('loading');
       input.value = '';
       input.placeholder = originalPlaceholder;
+      // Reset mode if it was a question
+      if (selectedMode === 'question') {
+        selectedMode = null;
+      }
     }
   });
 
