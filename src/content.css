@@ -208,12 +208,15 @@
   border: none;
   color: white;
   padding: 8px 16px;
+  padding-left: 24px;
   border-radius: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 8px;
   transition: background-color 0.2s;
+  height: 36px;
 }
 
 .ai-button:hover {
@@ -221,12 +224,16 @@
 }
 
 .ai-button.selected {
-  background-color: #f1c40f;
+  background-color: #e6b800;
   color: black;
 }
 
 .ai-button .ai-icon {
   font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ai-icon-left {
