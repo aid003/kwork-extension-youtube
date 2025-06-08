@@ -114,7 +114,7 @@ function createSummarizer() {
   // Header
   const header = document.createElement('div');
   header.className = 'ai-summarizer-header';
-  header.textContent = 'AI Video Summarizer';
+  header.textContent = 'Video Summarizer';
 
   // Controls
   const controls = document.createElement('div');
