@@ -22,21 +22,29 @@
     {
       "matches": ["*://*.youtube.com/*"],
       "js": ["src/content.ts"],
-      "css": ["src/content.css"]
+      "css": ["src/content.css"],
+      "run_at": "document_end"
     }
   ],
-  "{{chrome}}.web_accessible_resources": [{
-    "resources": ["welcome.html", "language.svg", "settings.svg", "arrow-down.svg", "button-send.svg"],
-    "matches": ["<all_urls>"]
-  }],
+  "{{chrome}}.web_accessible_resources": [
+    {
+      "resources": [
+        "welcome.html",
+        "language.svg",
+        "settings.svg",
+        "arrow-down.svg",
+        "button-send.svg"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "{{firefox}}.web_accessible_resources": [
-    "welcome.html", "language.svg", "settings.svg", "arrow-down.svg", "button-send.svg"
+    "welcome.html",
+    "language.svg",
+    "settings.svg",
+    "arrow-down.svg",
+    "button-send.svg"
   ],
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
-  "host_permissions": [
-    "*://*.youtube.com/*"
-  ]
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["*://*.youtube.com/*"]
 }
