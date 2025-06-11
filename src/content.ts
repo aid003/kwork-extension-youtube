@@ -538,4 +538,4 @@
 //   }
 // }, 150);
 
-import "./navigation";   // navigation импортирует ui  +  transcript + utils
+// import "./navigation";   // navigation импортирует ui  +  transcript + utils

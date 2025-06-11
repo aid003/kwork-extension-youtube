@@ -1,11 +1,10 @@
+import browser from "webextension-polyfill";
+import { startTranscript } from "./transcript";
+
 /*──────────────────────────────  src/ui.ts  ──────────────────────────────
  * Содержит только UI-код (dropdown + summarizer).  Логика расшифровки
  * и навигационный SPA-observer вынесены в другие модули.
  * ----------------------------------------------------------------------*/
-
-import browser from "webextension-polyfill";
-
-/*────────── типы и константы ──────────*/
 
 export interface DropdownOption {
   value: string;
@@ -13,7 +12,6 @@ export interface DropdownOption {
   description?: string;
 }
 
-/* Языки для будущих LLM-саммари */
 export const languages: DropdownOption[] = [
   { value: "en", label: "English" },
   { value: "es", label: "Español" },
@@ -22,14 +20,11 @@ export const languages: DropdownOption[] = [
   { value: "pt", label: "Português" }
 ];
 
-/* Гранулярность саммари */
 export const detailLevels: DropdownOption[] = [
   { value: "concise",  label: "Concise",  description: "Main points only" },
   { value: "standard", label: "Standard", description: "Key moments with context" },
   { value: "detailed", label: "Detailed", description: "Full chronological breakdown" }
 ];
-
-/*────────── Dropdown ──────────*/
 
 export function createDropdown(
   options: DropdownOption[],
@@ -41,7 +36,6 @@ export function createDropdown(
 
   const selected = options.find(o => o.value === initialValue) || options[0];
 
-  /* main button */
   const button = document.createElement("button");
   button.className = "ai-dropdown-button";
   button.innerHTML = `
@@ -50,7 +44,6 @@ export function createDropdown(
       <img src="${browser.runtime.getURL("arrow-down.svg")}" />
     </span>`;
 
-  /* list */
   const content = document.createElement("div");
   content.className = "ai-dropdown-content";
 
@@ -74,7 +67,6 @@ export function createDropdown(
         }
       </div>`;
 
-    /* выбор опции */
     item.addEventListener("click", () => {
       button.innerHTML = `
         <span class="ai-icon-left">${icon}</span><span>${o.label}</span>
@@ -97,7 +89,6 @@ export function createDropdown(
     content.appendChild(item);
   });
 
-  /* open / close */
   button.addEventListener("click", e => {
     e.stopPropagation();
     dropdown.classList.toggle("active");
@@ -112,23 +103,18 @@ export function createDropdown(
   return dropdown;
 }
 
-/*────────── Полный summarizer ──────────*/
-
 export function createSummarizer() {
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
 
-  /* header */
   const head = document.createElement("div");
   head.className = "ai-summarizer-header";
   head.textContent = "Video Summarizer";
 
-  /* controls */
   const controls = document.createElement("div");
   controls.className = "ai-summarizer-controls";
 
-  /* row-1: language + detail */
   const row1 = document.createElement("div");
   row1.className = "ai-controls-row";
   row1.appendChild(
@@ -147,7 +133,6 @@ export function createSummarizer() {
   row1.appendChild(detailDD);
   controls.appendChild(row1);
 
-  /* row-2: mode buttons */
   const row2 = document.createElement("div");
   row2.className = "ai-controls-row";
   row2.style.display = "flex";
@@ -166,6 +151,13 @@ export function createSummarizer() {
   const bSum = mkBtn("Summarize", "✨");
   const bTim = mkBtn("Timestamps", "⏱️");
 
+  // Start transcription when mode buttons are clicked
+  [bSum, bTim].forEach(btn => {
+    btn.addEventListener("click", () => {
+      startTranscript();
+    });
+  });
+
   bSum.addEventListener("click", () => {
     bSum.classList.toggle("selected");
     bTim.classList.remove("selected");
@@ -180,7 +172,6 @@ export function createSummarizer() {
   row2.appendChild(bSum); row2.appendChild(bTim);
   controls.appendChild(row2);
 
-  /* input + send */
   const wrap = document.createElement("div");
   wrap.className = "ai-input-container";
 
@@ -198,6 +189,11 @@ export function createSummarizer() {
   send.className = "ai-send-button";
   send.innerHTML = `<img src="${browser.runtime.getURL("button-send.svg")}" />`;
   wrap.appendChild(send);
+
+  // Trigger transcription on send as well
+  send.addEventListener("click", () => {
+    startTranscript();
+  });
 
   send.addEventListener("click", async () => {
     if (!mode && !input.value.trim()) return;
@@ -217,7 +213,6 @@ export function createSummarizer() {
         ? "          Generating summary…"
         : "          Getting your answer…";
 
-    /* здесь будет запрос к background / LLM  */
     await new Promise(r => setTimeout(r, 1800));
 
     send.classList.remove("hidden");
@@ -229,14 +224,11 @@ export function createSummarizer() {
     if (mode === "question") mode = null;
   });
 
-  /* assemble */
   box.appendChild(head);
   box.appendChild(controls);
   box.appendChild(wrap);
   return box;
 }
-
-/*────────── автоматическая вставка summarizer’а ──────────*/
 
 export function mountSummarizer() {
   if (document.getElementById("ai-video-summarizer")) return;
