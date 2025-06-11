@@ -1,190 +1,161 @@
-// import browser from "webextension-polyfill";
-// import { logT, sleep } from "./utils";
-
-// export class TranscriptSession {
-//   private stopped = false;
-
-//   constructor(readonly id: string) {}
-
-//   /** Entry point: click transcript UI and parse DOM */
-//   async start() {
-//     logT("start DOM transcript", this.id);
-//     try {
-//       await this.openPanelAndRead();
-//     } catch (err) {
-//       logT("failed DOM transcript", err as any);
-//     }
-//   }
-
-//   stop() {
-//     if (this.stopped) return;
-//     this.stopped = true;
-//     logT("stop", this.id);
-//   }
-
-//   private async openPanelAndRead() {
-//     if (this.stopped) return;
-//     logT("open transcript panel DOM", this.id);
-
-//     // a) expand description if needed
-//     const expandBtn = document.getElementById(
-//       "expand"
-//     ) as HTMLButtonElement | null;
-//     if (expandBtn && expandBtn.offsetParent !== null) {
-//       expandBtn.click();
-//       await sleep(60);
-//     }
-
-//     // b) click "Show transcript" button in description area
-//     const showBtn = document.querySelector<HTMLButtonElement>(
-//       "ytd-video-description-transcript-section-renderer ytd-button-renderer button"
-//     );
-//     if (showBtn && showBtn.offsetParent !== null) {
-//       showBtn.click();
-//     } else {
-//       throw new Error("Show transcript button not found");
-//     }
-
-//     // c) wait for transcript panel
-//     const panel = await this.waitPanel();
-//     if (!panel) throw new Error("Transcript panel not found");
-
-//     // hide panel
-//     (panel as HTMLElement).style.cssText = `
-//       position: fixed !important;
-//       top: -9999px !important;
-//       left: -9999px !important;
-//       width: 0 !important;
-//       height: 0 !important;
-//       opacity: 0 !important;
-//       pointer-events: none !important;
-//     `;
-
-//     // parse text segments
-//     const lines: string[] = [];
-//     panel
-//       .querySelectorAll<HTMLElement>("ytd-transcript-segment-renderer")
-//       .forEach((seg) => {
-//         const ts =
-//           seg.querySelector(".segment-timestamp")?.textContent?.trim() ?? "";
-//         const txt =
-//           seg.querySelector(".segment-text")?.textContent?.trim() ?? "";
-//         if (txt) lines.push(`${ts}  ${txt}`);
-//       });
-//     const transcript = lines.join("\n").trim();
-//     if (transcript) {
-//       await this.flush(transcript);
-//     }
-//   }
-
-//   private waitPanel(timeout = 15000): Promise<Element | null> {
-//     return new Promise((resolve) => {
-//       const check = () => {
-//         const p = document.querySelector(
-//           'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]'
-//         );
-//         if (p && p.querySelector("ytd-transcript-segment-renderer")) {
-//           resolve(p);
-//           return true;
-//         }
-//         return false;
-//       };
-//       if (check()) return;
-//       const mo = new MutationObserver(() => check() && mo.disconnect());
-//       mo.observe(document.body, { childList: true, subtree: true });
-//       setTimeout(() => {
-//         mo.disconnect();
-//         resolve(null);
-//       }, timeout);
-//     });
-//   }
-
-//   private async flush(text: string) {
-//     if (this.stopped || !text) return;
-//     logT("flush DOM transcript", text.slice(0, 100));
-//     try {
-//       await browser.runtime.sendMessage({
-//         type: "video-transcript",
-//         videoId: this.id,
-//         transcript: text,
-//       });
-//     } catch (e) {
-//       logT("background unreachable:", e);
-//     }
-//   }
-// }
-
+// ───────────────────────── src/transcript.ts ───────────────────────────
 import browser from "webextension-polyfill";
-import { getTextAndOffset } from "./rf";
-import { convertToCompactString } from "./bf";
-import { Kn, Zn, Xn, Yn, Qn, ei, ti } from "./domUtils";
-import { isNewUI } from "./zn";
-import { ni } from "./retry";
-import { logT, sleep } from "./utils";
+import { logT, sleep, getVid } from "./utils";
+
+/* ────────── 1. stealth-CSS (вставляется один раз на вкладку) ────────── */
+
+const HIDDEN_CSS_ID = "ai-stealth-transcript-style";
+
+function injectStealthCSS(): void {
+  if (document.getElementById(HIDDEN_CSS_ID)) return;
+
+  const st = document.createElement("style");
+  st.id = HIDDEN_CSS_ID;
+  st.textContent = `
+    /* выносим панель из потока, делаем невидимой */
+    .ai-stealth-transcript{
+      position:fixed!important;
+      top:0;left:0;
+      width:1px;height:1px;
+      overflow:hidden!important;
+      opacity:0!important;
+      pointer-events:none!important;
+      z-index:-1!important;
+    }
+  `;
+  document.head.appendChild(st);
+}
+
+/* ───────────────────────────── session ──────────────────────────────── */
 
 export class TranscriptSession {
   private stopped = false;
+  private panelEl?: HTMLElement; // держим ссылку, чтобы потом удалить
 
   constructor(readonly id: string) {}
 
-  /**
-   * Entry point: try API first, then fallback to DOM parsing
-   */
-  async start() {
-    logT("Transcript start", this.id);
-    // First attempt via API
+  async start(): Promise<void> {
+    logT("start DOM transcript", this.id);
     try {
-      const apiData = await getTextAndOffset();
-      const compact = convertToCompactString(apiData.offset);
-      if (!compact) throw new Error("Empty API transcript");
-      await this.flush(compact);
-      return;
+      await this.openPanelAndRead();
     } catch (err) {
-      logT("API transcript failed, falling back to DOM", err as any);
-    }
-
-    // Fallback via DOM
-    try {
-      await this.fallbackDOM();
-    } catch (err) {
-      logT("DOM transcript failed", err as any);
+      logT("failed DOM transcript", err as any);
     }
   }
 
-  stop() {
+  stop(): void {
     if (this.stopped) return;
     this.stopped = true;
-    logT("Transcript stopped", this.id);
+    logT("stop", this.id);
+    this.panelEl?.remove();
   }
 
-  /**
-   * Fallback logic: open panel, read segments, send
-   */
-  private async fallbackDOM() {
+  /* ─────────────────────── main workflow ────────────────────────────── */
+
+  private async openPanelAndRead(): Promise<void> {
     if (this.stopped) return;
-    logT("DOM fallback start", this.id);
 
-    // locate panel
-    const panel = Kn();
-    if (!panel) throw new Error("Transcript panel container not found");
+    /* a) раскрываем описание (если свёрнуто) */
+    const expandBtn = document.getElementById(
+      "expand",
+    ) as HTMLButtonElement | null;
+    if (expandBtn && expandBtn.offsetParent !== null) {
+      expandBtn.click();
+      await sleep(60);
+    }
 
-    // choose opener depending on UI version
-    const opener = (await isNewUI()) ? Yn : Qn;
+    /* b) жмём “Show transcript” */
+    const showBtn = document.querySelector<HTMLButtonElement>(
+      "ytd-video-description-transcript-section-renderer ytd-button-renderer button",
+    );
+    if (!showBtn || showBtn.offsetParent === null) {
+      throw new Error("Show transcript button not found");
+    }
+    showBtn.click();
 
-    // use retry wrapper ni to ensure panel opens and segments load
-    const segments = await ni(ei, opener, panel);
-    const compact = convertToCompactString(segments || []);
-    if (!compact) throw new Error("No segments extracted");
+    /* c) ждём появления панели с первым сегментом */
+    const panel = await this.waitPanel();
+    if (!panel) throw new Error("Transcript panel not found");
+    this.panelEl = panel as HTMLElement;
 
-    await this.flush(compact);
+    /* d) переносим панель в <body> и прячем */
+    injectStealthCSS();
+    document.body.appendChild(this.panelEl);
+    this.panelEl.classList.add("ai-stealth-transcript");
+
+    /* e) прокручиваем список, заставляя YouTube догрузить сегменты */
+    await this.forceLoadAllSegments(this.panelEl);
+
+    /* f) собираем текст и отправляем */
+    const transcript = this.collectText(this.panelEl);
+    if (transcript) await this.flush(transcript);
   }
 
-  /**
-   * Send transcript to background
-   */
-  private async flush(text: string) {
+  /* ─────────────────────── helpers ──────────────────────────────────── */
+
+  /** ждём panel с первым сегментом */
+  private waitPanel(timeout = 15_000): Promise<Element | null> {
+    return new Promise((resolve) => {
+      const ready = (): boolean => {
+        const p = document.querySelector(
+          'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"]',
+        );
+        if (p && p.querySelector("ytd-transcript-segment-renderer")) {
+          resolve(p);
+          return true;
+        }
+        return false;
+      };
+      if (ready()) return;
+
+      const mo = new MutationObserver(() => ready() && mo.disconnect());
+      mo.observe(document.body, { childList: true, subtree: true });
+
+      setTimeout(() => {
+        mo.disconnect();
+        resolve(null);
+      }, timeout);
+    });
+  }
+
+  /** прокручиваем вниз, пока количество строк перестанет расти */
+  private async forceLoadAllSegments(panel: Element): Promise<void> {
+    const list = panel.querySelector<HTMLElement>(
+      "ytd-transcript-segment-list-renderer #segments-container",
+    );
+    if (!list) return;
+
+    let prev = 0;
+    for (let i = 0; i < 20; i++) {
+      // максимум ~2-3 секунды
+      list.scrollTo({ top: list.scrollHeight });
+      await sleep(120);
+      const curr = list.querySelectorAll(
+        "ytd-transcript-segment-renderer",
+      ).length;
+      if (curr === prev || curr === 0) break;
+      prev = curr;
+    }
+  }
+
+  private collectText(panel: Element): string {
+    const lines: string[] = [];
+    panel
+      .querySelectorAll<HTMLElement>("ytd-transcript-segment-renderer")
+      .forEach((seg) => {
+        const ts =
+          seg.querySelector(".segment-timestamp")?.textContent?.trim() ?? "";
+        const txt =
+          seg.querySelector(".segment-text")?.textContent?.trim() ?? "";
+        if (txt) lines.push(`${ts}  ${txt}`);
+      });
+    return lines.join("\n").trim();
+  }
+
+  private async flush(text: string): Promise<void> {
     if (this.stopped || !text) return;
-    logT("Flush transcript", text.slice(0, 100));
+    logT("flush DOM transcript", text.slice(0, 120));
+
     try {
       await browser.runtime.sendMessage({
         type: "video-transcript",
@@ -192,18 +163,28 @@ export class TranscriptSession {
         transcript: text,
       });
     } catch (e) {
-      logT("Background unreachable", e);
+      logT("background unreachable:", e);
+    } finally {
+      this.panelEl?.remove(); // удаляем «невидимку»
+      this.panelEl = undefined;
     }
   }
 }
 
-// Utility: convert timestamp string to seconds
-export function ti(timestamp: string): number {
-  if (!timestamp) return 0;
-  const parts = timestamp.split(":").map(Number);
-  return parts.length === 3
-    ? parts[0] * 3600 + parts[1] * 60 + parts[2]
-    : parts.length === 2
-    ? parts[0] * 60 + parts[1]
-    : 0;
+/* ─────────────────────── public facade ──────────────────────────────── */
+
+let active: TranscriptSession | null = null;
+
+/** Запускаем транскрипт из UI; останавливаем предыдущий, если он был */
+export function startTranscript(): void {
+  active?.stop();
+
+  const videoId = getVid();
+  if (!videoId) {
+    console.error("Не удалось определить videoId для транскрибации");
+    return;
+  }
+
+  active = new TranscriptSession(videoId);
+  active.start();
 }

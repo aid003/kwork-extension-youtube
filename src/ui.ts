@@ -1,11 +1,10 @@
+// src/ui.ts
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import browser from "webextension-polyfill";
 import { startTranscript } from "./transcript";
+import { getVid } from "./utils";
 
-/*──────────────────────────────  src/ui.ts  ──────────────────────────────
- * Содержит только UI-код (dropdown + summarizer).  Логика расшифровки
- * и навигационный SPA-observer вынесены в другие модули.
- * ----------------------------------------------------------------------*/
-
+/*─────────────────────────── constants ────────────────────────────────*/
 export interface DropdownOption {
   value: string;
   label: string;
@@ -17,45 +16,70 @@ export const languages: DropdownOption[] = [
   { value: "es", label: "Español" },
   { value: "fr", label: "Français" },
   { value: "it", label: "Italiano" },
-  { value: "pt", label: "Português" }
+  { value: "pt", label: "Português" },
 ];
 
 export const detailLevels: DropdownOption[] = [
-  { value: "concise",  label: "Concise",  description: "Main points only" },
-  { value: "standard", label: "Standard", description: "Key moments with context" },
-  { value: "detailed", label: "Detailed", description: "Full chronological breakdown" }
+  { value: "concise", label: "Concise", description: "Main points only" },
+  {
+    value: "standard",
+    label: "Standard",
+    description: "Key moments with context",
+  },
+  {
+    value: "detailed",
+    label: "Detailed",
+    description: "Full chronological breakdown",
+  },
 ];
 
-export function createDropdown(
-  options: DropdownOption[],
-  initialValue: string,
-  icon: string
-) {
-  const dropdown = document.createElement("div");
-  dropdown.className = "ai-dropdown";
+/*────────────────────────── persistence ──────────────────────────────*/
+const LANG_KEY = "ai_lang";
+const DETAIL_KEY = "ai_detail";
+async function getSetting<T>(k: string, def: T): Promise<T> {
+  const o = await browser.storage.local.get({ [k]: def });
+  return (o as any)[k] as T;
+}
+function setSetting(k: string, v: string) {
+  void browser.storage.local.set({ [k]: v });
+}
 
-  const selected = options.find(o => o.value === initialValue) || options[0];
+/*──────────────────── dropdown generator ─────────────────────────────*/
+function createDropdown(
+  opts: DropdownOption[],
+  initial: string,
+  iconHTML: string,
+  storageKey?: string,
+  onChange?: (v: string) => void,
+): HTMLDivElement {
+  const dd = document.createElement("div");
+  dd.className = "ai-dropdown";
 
-  const button = document.createElement("button");
-  button.className = "ai-dropdown-button";
-  button.innerHTML = `
-    <span class="ai-icon-left">${icon}</span>${selected.label}
-    <span class="ai-icon-right arrow-icon">
-      <img src="${browser.runtime.getURL("arrow-down.svg")}" />
-    </span>`;
+  let selected = opts.find((o) => o.value === initial) ?? opts[0];
+  const btn = document.createElement("button");
+  btn.className = "ai-dropdown-button";
+
+  const renderBtn = () => {
+    btn.innerHTML = `
+      <span class="ai-icon-left">${iconHTML}</span>
+      ${selected.label}
+      <span class="ai-icon-right arrow-icon">
+        <img src="${browser.runtime.getURL("arrow-down.svg")}" />
+      </span>`;
+  };
+  renderBtn();
 
   const content = document.createElement("div");
   content.className = "ai-dropdown-content";
 
-  options.forEach(o => {
+  opts.forEach((o) => {
     const item = document.createElement("div");
     item.className =
-      "ai-dropdown-item" + (o.value === initialValue ? " selected" : "");
-
+      "ai-dropdown-item" + (o.value === selected.value ? " selected" : "");
     item.innerHTML = `
       <div style="display:flex;align-items:center;width:100%;">
         <span class="checkmark" style="width:16px;text-align:center;">
-          ${o.value === initialValue ? "✓" : ""}
+          ${o.value === selected.value ? "✓" : ""}
         </span>
         ${
           o.description
@@ -68,171 +92,224 @@ export function createDropdown(
       </div>`;
 
     item.addEventListener("click", () => {
-      button.innerHTML = `
-        <span class="ai-icon-left">${icon}</span><span>${o.label}</span>
-        <span class="ai-icon-right arrow-icon">
-          <img src="${browser.runtime.getURL("arrow-down.svg")}" />
-        </span>`;
+      selected = o;
+      renderBtn();
 
-      content.querySelectorAll(".ai-dropdown-item").forEach(el => {
+      content.querySelectorAll(".ai-dropdown-item").forEach((el) => {
         el.classList.remove("selected");
         const mk = el.querySelector(".checkmark") as HTMLElement | null;
         if (mk) mk.textContent = "";
       });
       item.classList.add("selected");
-      const mk = item.querySelector(".checkmark") as HTMLElement | null;
-      if (mk) mk.textContent = "✓";
+      (item.querySelector(".checkmark") as HTMLElement).textContent = "✓";
 
-      dropdown.classList.remove("active");
+      if (storageKey) setSetting(storageKey, o.value);
+      onChange?.(o.value);
+      dd.classList.remove("active");
     });
 
     content.appendChild(item);
   });
 
-  button.addEventListener("click", e => {
+  btn.addEventListener("click", (e) => {
     e.stopPropagation();
-    dropdown.classList.toggle("active");
-    document.querySelectorAll(".ai-dropdown").forEach(el => {
-      if (el !== dropdown) el.classList.remove("active");
+    dd.classList.toggle("active");
+    document.querySelectorAll(".ai-dropdown").forEach((el) => {
+      if (el !== dd) el.classList.remove("active");
     });
   });
-  document.addEventListener("click", () => dropdown.classList.remove("active"));
+  if (!(document as any)._aiGlobalClose) {
+    document.addEventListener("click", () =>
+      document
+        .querySelectorAll(".ai-dropdown")
+        .forEach((el) => el.classList.remove("active")),
+    );
+    (document as any)._aiGlobalClose = true;
+  }
 
-  dropdown.appendChild(button);
-  dropdown.appendChild(content);
-  return dropdown;
+  dd.append(btn, content);
+  return dd;
 }
 
-export function createSummarizer() {
+/*────────────────────────── summarizer UI ─────────────────────────────*/
+export function createSummarizer(
+  langInit: string,
+  detailInit: string,
+): HTMLDivElement {
+  let mode: "summarize" | "timestamps" | "question" | null = null;
+  let currentLang = langInit;
+  let currentDetail = detailInit;
+
+  /* root */
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
 
+  /* header */
   const head = document.createElement("div");
   head.className = "ai-summarizer-header";
   head.textContent = "Video Summarizer";
+  box.appendChild(head);
 
+  /* controls */
   const controls = document.createElement("div");
   controls.className = "ai-summarizer-controls";
 
+  /* row #1 */
   const row1 = document.createElement("div");
   row1.className = "ai-controls-row";
-  row1.appendChild(
+  row1.append(
     createDropdown(
       languages,
-      "en",
-      `<img src="${browser.runtime.getURL("language.svg")}" />`
-    )
+      langInit,
+      `<img src="${browser.runtime.getURL("language.svg")}" />`,
+      LANG_KEY,
+      (v) => (currentLang = v),
+    ),
   );
-  const detailDD = createDropdown(
+  const ddDetail = createDropdown(
     detailLevels,
-    "detailed",
-    `<img src="${browser.runtime.getURL("settings.svg")}" />`
+    detailInit,
+    `<img src="${browser.runtime.getURL("settings.svg")}" />`,
+    DETAIL_KEY,
+    (v) => (currentDetail = v),
   );
-  detailDD.style.marginLeft = "15px";
-  row1.appendChild(detailDD);
-  controls.appendChild(row1);
+  ddDetail.style.marginLeft = "15px";
+  row1.append(ddDetail);
+  controls.append(row1);
 
+  /* row #2 buttons */
   const row2 = document.createElement("div");
   row2.className = "ai-controls-row";
-  row2.style.display = "flex";
-  row2.style.gap = "12px";
-  row2.style.width = "100%";
+  Object.assign(row2.style, { display: "flex", gap: "12px", width: "100%" });
 
-  let mode: "summarize" | "timestamps" | "question" | null = null;
-
-  const mkBtn = (txt: string, ic: string) => {
+  const makeBtn = (txt: string, icon: string) => {
     const b = document.createElement("button");
     b.className = "ai-button";
     b.style.flex = "1";
-    b.innerHTML = `<span class="ai-icon">${ic}</span> ${txt}`;
+    b.innerHTML = `<span class="ai-icon">${icon}</span>${txt}`;
     return b;
   };
-  const bSum = mkBtn("Summarize", "✨");
-  const bTim = mkBtn("Timestamps", "⏱️");
+  const btnSum = makeBtn("Summarize", "✨");
+  const btnTim = makeBtn("Timestamps", "⏱️");
 
-  // Start transcription when mode buttons are clicked
-  [bSum, bTim].forEach(btn => {
-    btn.addEventListener("click", () => {
-      startTranscript();
-    });
+  btnSum.addEventListener("click", () => {
+    btnSum.classList.toggle("selected");
+    btnTim.classList.remove("selected");
+    mode = btnSum.classList.contains("selected") ? "summarize" : null;
+  });
+  btnTim.addEventListener("click", () => {
+    btnTim.classList.toggle("selected");
+    btnSum.classList.remove("selected");
+    mode = btnTim.classList.contains("selected") ? "timestamps" : null;
   });
 
-  bSum.addEventListener("click", () => {
-    bSum.classList.toggle("selected");
-    bTim.classList.remove("selected");
-    mode = bSum.classList.contains("selected") ? "summarize" : null;
-  });
-  bTim.addEventListener("click", () => {
-    bTim.classList.toggle("selected");
-    bSum.classList.remove("selected");
-    mode = bTim.classList.contains("selected") ? "timestamps" : null;
-  });
+  row2.append(btnSum, btnTim);
+  controls.append(row2);
 
-  row2.appendChild(bSum); row2.appendChild(bTim);
-  controls.appendChild(row2);
-
-  const wrap = document.createElement("div");
-  wrap.className = "ai-input-container";
+  /* input + spinner + send */
+  const inputWrap = document.createElement("div");
+  inputWrap.className = "ai-input-container";
 
   const spinner = document.createElement("div");
   spinner.className = "ai-loading-spinner";
-  wrap.appendChild(spinner);
+  inputWrap.append(spinner);
 
   const input = document.createElement("input");
   input.type = "text";
   input.className = "ai-input";
   input.placeholder = "Ask about the video…";
-  wrap.appendChild(input);
+  inputWrap.append(input);
 
-  const send = document.createElement("button");
-  send.className = "ai-send-button";
-  send.innerHTML = `<img src="${browser.runtime.getURL("button-send.svg")}" />`;
-  wrap.appendChild(send);
+  const btnSend = document.createElement("button");
+  btnSend.className = "ai-send-button";
+  btnSend.innerHTML = `<img src="${browser.runtime.getURL(
+    "button-send.svg",
+  )}" />`;
+  inputWrap.append(btnSend);
 
-  // Trigger transcription on send as well
-  send.addEventListener("click", () => {
-    startTranscript();
-  });
-
-  send.addEventListener("click", async () => {
-    if (!mode && !input.value.trim()) return;
-    if (!mode && input.value.trim()) mode = "question";
-
-    send.classList.add("hidden");
+  /* helpers */
+  function beginLoading(text: string) {
     spinner.classList.add("visible");
     input.disabled = true;
-    input.classList.add("loading");
-
-    const ph = input.placeholder;
     input.placeholder = "";
-    input.value =
-      mode === "timestamps"
-        ? "          Loading timestamps…"
-        : mode === "summarize"
-        ? "          Generating summary…"
-        : "          Getting your answer…";
-
-    await new Promise(r => setTimeout(r, 1800));
-
-    send.classList.remove("hidden");
+    input.value = text;
+    btnSend.classList.add("hidden");
+  }
+  function endLoading() {
     spinner.classList.remove("visible");
     input.disabled = false;
-    input.classList.remove("loading");
     input.value = "";
-    input.placeholder = ph;
-    if (mode === "question") mode = null;
+    input.placeholder = "Ask about the video…";
+    btnSend.classList.remove("hidden");
+  }
+  function postRequest(
+    btn: "summarize" | "timestamps" | "question",
+    query: string | null,
+  ) {
+    browser.runtime.sendMessage({
+      type: "summarizer-request",
+      videoId: getVid(),
+      button: btn,
+      lang: currentLang,
+      detail: currentDetail,
+      query,
+    });
+  }
+
+  /* send button for questions */
+  btnSend.addEventListener("click", async () => {
+    if (!input.value.trim()) return;
+    postRequest("question", input.value.trim());
+    beginLoading("          Getting your answer…");
+    await new Promise((r) => setTimeout(r, 2000));
+    endLoading();
   });
 
-  box.appendChild(head);
-  box.appendChild(controls);
-  box.appendChild(wrap);
+  /* delegate clicks for summarization/timestamps */
+  box.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest(
+      ".ai-button",
+    ) as HTMLButtonElement | null;
+    if (!b) return;
+
+    if (mode === "summarize" || mode === "timestamps") {
+      const loadingText =
+        mode === "summarize"
+          ? "          Generating summary…"
+          : "          Loading timestamps…";
+      postRequest(mode, null);
+      beginLoading(loadingText);
+      startTranscript();
+
+      // убираем анимацию по таймеру (замените на обработку ответа)
+      setTimeout(endLoading, 4000);
+    }
+  });
+
+  box.append(controls, inputWrap);
   return box;
 }
 
-export function mountSummarizer() {
+/*───────────────────────── mount & reset ──────────────────────────────*/
+export async function mountSummarizer(): Promise<void> {
   if (document.getElementById("ai-video-summarizer")) return;
-  const rel = document.querySelector("#related.style-scope.ytd-watch-flexy");
-  if (rel) rel.insertAdjacentElement("afterbegin", createSummarizer());
+  const [lang, detail] = await Promise.all([
+    getSetting(LANG_KEY, "en"),
+    getSetting(DETAIL_KEY, "detailed"),
+  ]);
+
+  const related = document.querySelector(
+    "#related.style-scope.ytd-watch-flexy",
+  );
+  if (related)
+    related.insertAdjacentElement("afterbegin", createSummarizer(lang, detail));
   else setTimeout(mountSummarizer, 1000);
 }
+
+export function resetSummarizerControls(): void {
+  document.getElementById("ai-video-summarizer")?.remove();
+}
+
+/*──────────────────────── bootstrap ───────────────────────────────────*/
+document.addEventListener("DOMContentLoaded", () => void mountSummarizer());
