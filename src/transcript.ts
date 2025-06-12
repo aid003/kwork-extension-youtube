@@ -1,8 +1,6 @@
-// ───────────────────────── src/transcript.ts ───────────────────────────
+//  src/transcript.ts 
 import browser from "webextension-polyfill";
 import { logT, sleep, getVid } from "./utils";
-
-/* ────────── 1. stealth-CSS (вставляется один раз на вкладку) ────────── */
 
 const HIDDEN_CSS_ID = "ai-stealth-transcript-style";
 
@@ -26,11 +24,9 @@ function injectStealthCSS(): void {
   document.head.appendChild(st);
 }
 
-/* ───────────────────────────── session ──────────────────────────────── */
-
 export class TranscriptSession {
   private stopped = false;
-  private panelEl?: HTMLElement; // держим ссылку, чтобы потом удалить
+  private panelEl?: HTMLElement;
 
   constructor(readonly id: string) {}
 
@@ -50,12 +46,9 @@ export class TranscriptSession {
     this.panelEl?.remove();
   }
 
-  /* ─────────────────────── main workflow ────────────────────────────── */
-
   private async openPanelAndRead(): Promise<void> {
     if (this.stopped) return;
 
-    /* a) раскрываем описание (если свёрнуто) */
     const expandBtn = document.getElementById(
       "expand",
     ) as HTMLButtonElement | null;
@@ -64,7 +57,6 @@ export class TranscriptSession {
       await sleep(60);
     }
 
-    /* b) жмём “Show transcript” */
     const showBtn = document.querySelector<HTMLButtonElement>(
       "ytd-video-description-transcript-section-renderer ytd-button-renderer button",
     );
@@ -73,27 +65,20 @@ export class TranscriptSession {
     }
     showBtn.click();
 
-    /* c) ждём появления панели с первым сегментом */
     const panel = await this.waitPanel();
     if (!panel) throw new Error("Transcript panel not found");
     this.panelEl = panel as HTMLElement;
 
-    /* d) переносим панель в <body> и прячем */
     injectStealthCSS();
     document.body.appendChild(this.panelEl);
     this.panelEl.classList.add("ai-stealth-transcript");
 
-    /* e) прокручиваем список, заставляя YouTube догрузить сегменты */
     await this.forceLoadAllSegments(this.panelEl);
-
-    /* f) собираем текст и отправляем */
+   
     const transcript = this.collectText(this.panelEl);
     if (transcript) await this.flush(transcript);
   }
 
-  /* ─────────────────────── helpers ──────────────────────────────────── */
-
-  /** ждём panel с первым сегментом */
   private waitPanel(timeout = 15_000): Promise<Element | null> {
     return new Promise((resolve) => {
       const ready = (): boolean => {
@@ -118,7 +103,6 @@ export class TranscriptSession {
     });
   }
 
-  /** прокручиваем вниз, пока количество строк перестанет расти */
   private async forceLoadAllSegments(panel: Element): Promise<void> {
     const list = panel.querySelector<HTMLElement>(
       "ytd-transcript-segment-list-renderer #segments-container",
@@ -165,17 +149,13 @@ export class TranscriptSession {
     } catch (e) {
       logT("background unreachable:", e);
     } finally {
-      this.panelEl?.remove(); // удаляем «невидимку»
+      this.panelEl?.remove();
       this.panelEl = undefined;
     }
   }
 }
 
-/* ─────────────────────── public facade ──────────────────────────────── */
-
 let active: TranscriptSession | null = null;
-
-/** Запускаем транскрипт из UI; останавливаем предыдущий, если он был */
 export function startTranscript(): void {
   active?.stop();
 

@@ -33,7 +33,9 @@
         "language.svg",
         "settings.svg",
         "arrow-down.svg",
-        "button-send.svg"
+        "button-send.svg",
+        "close.svg",
+        "copy.svg"
       ],
       "matches": ["<all_urls>"]
     }

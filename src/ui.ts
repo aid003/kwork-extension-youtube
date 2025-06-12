@@ -1,15 +1,8 @@
-/* src/ui.ts
- * Панель AI-Summarizer: выпадашки языка/детализации, кнопки Summarize /
- * Timestamps, поле вопроса, отображение ответа бекенда (копировать / закрыть).
- * Работает вместе с background.ts, который рассылает сообщение
- * { type: "summarizer-result", videoId, button, result }.
- */
-
+/* src/ui.ts */
 import browser from "webextension-polyfill";
 import { startTranscript } from "./transcript";
 import { getVid } from "./utils";
 
-/*─────────────────────────── constants ────────────────────────────────*/
 export interface DropdownOption {
   value: string;
   label: string;
@@ -25,121 +18,141 @@ export const languages: DropdownOption[] = [
 ];
 
 export const detailLevels: DropdownOption[] = [
-  { value: "concise",  label: "Concise",  description: "Main points only" },
-  { value: "standard", label: "Standard", description: "Key moments with context" },
-  { value: "detailed", label: "Detailed", description: "Full chronological breakdown" },
+  { value: "concise", label: "Concise", description: "Main points only" },
+  {
+    value: "standard",
+    label: "Standard",
+    description: "Key moments with context",
+  },
+  {
+    value: "detailed",
+    label: "Detailed",
+    description: "Full chronological breakdown",
+  },
 ];
 
-/*────────────────────────── persistence ──────────────────────────────*/
-const LANG_KEY   = "ai_lang";
+const LANG_KEY = "ai_lang";
 const DETAIL_KEY = "ai_detail";
 async function getSetting<T>(k: string, def: T): Promise<T> {
   const o = await browser.storage.local.get({ [k]: def });
   return (o as any)[k] as T;
 }
-function setSetting(k: string, v: string) { void browser.storage.local.set({ [k]: v }); }
+function setSetting(k: string, v: string) {
+  void browser.storage.local.set({ [k]: v });
+}
 
-/*──────────────────── dropdown generator ─────────────────────────────*/
 function createDropdown(
   opts: DropdownOption[],
   init: string,
-  icon: string,
+  iconHTML: string,
   storageKey?: string,
-  onChange?: (v: string) => void,
+  onChange?: (v: string) => void
 ): HTMLDivElement {
   const dd = document.createElement("div");
   dd.className = "ai-dropdown";
 
-  let sel = opts.find(o => o.value === init) ?? opts[0];
+  let sel = opts.find((o) => o.value === init) ?? opts[0];
 
   const btn = document.createElement("button");
   btn.className = "ai-dropdown-button";
-  const render = () => {
+  const renderBtn = () => {
     btn.innerHTML = `
-      <span class="ai-icon-left">${icon}</span>${sel.label}
+      <span class="ai-icon-left">${iconHTML}</span>${sel.label}
       <span class="ai-icon-right arrow-icon">
         <img src="${browser.runtime.getURL("arrow-down.svg")}" />
       </span>`;
   };
-  render();
+  renderBtn();
 
   const list = document.createElement("div");
   list.className = "ai-dropdown-content";
 
-  opts.forEach(o => {
+  opts.forEach((o) => {
     const item = document.createElement("div");
-    item.className = "ai-dropdown-item" + (o.value === sel.value ? " selected" : "");
+    item.className =
+      "ai-dropdown-item" + (o.value === sel.value ? " selected" : "");
     item.innerHTML = `
       <div style="display:flex;align-items:center;width:100%;">
-        <span class="checkmark" style="width:16px;text-align:center;">${o.value === sel.value ? "✓" : ""}</span>
+        <span class="checkmark" style="width:16px;text-align:center;">
+          ${o.value === sel.value ? "✓" : ""}
+        </span>
         ${
           o.description
             ? `<div style="flex:1;"><div class="title">${o.label}</div><div class="description">${o.description}</div></div>`
             : `<div class="title" style="flex:1;">${o.label}</div>`
         }
       </div>`;
+
     item.onclick = () => {
-      sel = o; render();
-      list.querySelectorAll(".ai-dropdown-item").forEach(el => {
+      sel = o;
+      renderBtn();
+      list.querySelectorAll(".ai-dropdown-item").forEach((el) => {
         el.classList.remove("selected");
         const mk = el.querySelector(".checkmark") as HTMLElement | null;
         if (mk) mk.textContent = "";
       });
       item.classList.add("selected");
       (item.querySelector(".checkmark") as HTMLElement).textContent = "✓";
+
       if (storageKey) setSetting(storageKey, o.value);
       onChange?.(o.value);
       dd.classList.remove("active");
     };
+
     list.appendChild(item);
   });
 
-  btn.onclick = e => {
+  btn.onclick = (e) => {
     e.stopPropagation();
     dd.classList.toggle("active");
-    document.querySelectorAll(".ai-dropdown").forEach(el => el !== dd && el.classList.remove("active"));
+    document
+      .querySelectorAll(".ai-dropdown")
+      .forEach((el) => el !== dd && el.classList.remove("active"));
   };
-  if (!(document as any)._aiClose) {
+  if (!(document as any)._aiDDClose) {
     document.addEventListener("click", () =>
-      document.querySelectorAll(".ai-dropdown").forEach(el => el.classList.remove("active")));
-    (document as any)._aiClose = true;
+      document
+        .querySelectorAll(".ai-dropdown")
+        .forEach((el) => el.classList.remove("active"))
+    );
+    (document as any)._aiDDClose = true;
   }
 
   dd.append(btn, list);
   return dd;
 }
 
-/*────────────────────────── summarizer UI ─────────────────────────────*/
-export function createSummarizer(langInit: string, detailInit: string): HTMLDivElement {
-  /* state */
+export function createSummarizer(
+  langInit: string,
+  detailInit: string
+): HTMLDivElement {
   let mode: "summarize" | "timestamps" | "question" | null = null;
   let currentLang = langInit;
   let currentDetail = detailInit;
 
-  /* root container */
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
+  box.appendChild(
+    Object.assign(document.createElement("div"), {
+      className: "ai-summarizer-header",
+      textContent: "Video Summarizer",
+    })
+  );
 
-  /* header */
-  box.appendChild(Object.assign(document.createElement("div"), {
-    className: "ai-summarizer-header",
-    textContent: "Video Summarizer",
-  }));
-
-  /* controls */
   const controls = document.createElement("div");
   controls.className = "ai-summarizer-controls";
 
-  /* row 1 — dropdowns */
-  const row1 = Object.assign(document.createElement("div"), { className: "ai-controls-row" });
+  const row1 = Object.assign(document.createElement("div"), {
+    className: "ai-controls-row",
+  });
   row1.append(
     createDropdown(
       languages,
       langInit,
       `<img src="${browser.runtime.getURL("language.svg")}" />`,
       LANG_KEY,
-      v => (currentLang = v),
+      (v) => (currentLang = v)
     ),
     (() => {
       const dd = createDropdown(
@@ -147,16 +160,17 @@ export function createSummarizer(langInit: string, detailInit: string): HTMLDivE
         detailInit,
         `<img src="${browser.runtime.getURL("settings.svg")}" />`,
         DETAIL_KEY,
-        v => (currentDetail = v),
+        (v) => (currentDetail = v)
       );
       dd.style.marginLeft = "15px";
       return dd;
-    })(),
+    })()
   );
   controls.append(row1);
 
-  /* row 2 — mode buttons */
-  const row2 = Object.assign(document.createElement("div"), { className: "ai-controls-row" });
+  const row2 = Object.assign(document.createElement("div"), {
+    className: "ai-controls-row",
+  });
   Object.assign(row2.style, { display: "flex", gap: "12px", width: "100%" });
 
   const mkBtn = (txt: string, ic: string) => {
@@ -166,7 +180,7 @@ export function createSummarizer(langInit: string, detailInit: string): HTMLDivE
     b.innerHTML = `<span class="ai-icon">${ic}</span>${txt}`;
     return b;
   };
-  const btnSum = mkBtn("Summarize",  "✨");
+  const btnSum = mkBtn("Summarize", "✨");
   const btnTim = mkBtn("Timestamps", "⏱️");
   btnSum.onclick = () => {
     btnSum.classList.toggle("selected");
@@ -181,30 +195,25 @@ export function createSummarizer(langInit: string, detailInit: string): HTMLDivE
   row2.append(btnSum, btnTim);
   controls.append(row2);
 
-  /* slot for backend result */
   const resultSlot = document.createElement("div");
   resultSlot.className = "ai-result-slot";
   controls.append(resultSlot);
 
-  /* input + send */
-  const inputWrap = Object.assign(document.createElement("div"), { className: "ai-input-container" });
-
-  const spinner = Object.assign(document.createElement("div"), { className: "ai-loading-spinner" });
-  inputWrap.append(spinner);
-
+  const wrap = document.createElement("div");
+  wrap.className = "ai-input-container";
+  const spinner = document.createElement("div");
+  spinner.className = "ai-loading-spinner";
   const input = Object.assign(document.createElement("input"), {
     className: "ai-input",
     placeholder: "Ask about the video…",
   });
-  inputWrap.append(input);
+  const btnSend = document.createElement("button");
+  btnSend.className = "ai-send-button";
+  btnSend.innerHTML = `<img src="${browser.runtime.getURL(
+    "button-send.svg"
+  )}" />`;
+  wrap.append(spinner, input, btnSend);
 
-  const btnSend = Object.assign(document.createElement("button"), {
-    className: "ai-send-button",
-    innerHTML: `<img src="${browser.runtime.getURL("button-send.svg")}" />`,
-  });
-  inputWrap.append(btnSend);
-
-  /* loading helpers */
   const beginLoad = (txt: string) => {
     spinner.classList.add("visible");
     input.disabled = true;
@@ -217,8 +226,10 @@ export function createSummarizer(langInit: string, detailInit: string): HTMLDivE
     input.value = "";
     btnSend.classList.remove("hidden");
   };
-
-  const postReq = (btn: "summarize" | "timestamps" | "question", q: string | null) =>
+  const postReq = (
+    btn: "summarize" | "timestamps" | "question",
+    q: string | null
+  ) =>
     browser.runtime.sendMessage({
       type: "summarizer-request",
       videoId: getVid(),
@@ -228,82 +239,148 @@ export function createSummarizer(langInit: string, detailInit: string): HTMLDivE
       query: q,
     });
 
-  /* question send */
   btnSend.onclick = () => {
     if (!input.value.trim()) return;
     postReq("question", input.value.trim());
     beginLoad("          Getting your answer…");
   };
 
-  /* summarize / timestamps click */
-  box.addEventListener("click", e => {
+  box.addEventListener("click", (e) => {
     const tgt = (e.target as HTMLElement).closest(".ai-button");
     if (!tgt) return;
 
     if (mode === "summarize" || mode === "timestamps") {
-      const txt = mode === "summarize"
-        ? "          Generating summary…"
-        : "          Loading timestamps…";
+      beginLoad(
+        mode === "summarize"
+          ? "          Generating summary…"
+          : "          Loading timestamps…"
+      );
       postReq(mode, null);
-      beginLoad(txt);
       startTranscript();
     }
   });
 
-  /* показ ответа бекенда */
-  function showResult(result: string) {
+  /*─────────────── показать результат ───────────────*/
+  function showResult(raw: string) {
     endLoad();
     resultSlot.innerHTML = "";
+    const escape = (s: string) =>
+      s.replace(
+        /[&<>]/g,
+        (c) => (({ "&": "&amp;", "<": "&lt;", ">": "&gt;" } as any)[c])
+      );
+
+    const toHTML = (txt: string) => {
+      let html = escape(txt).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+      const lines = html.split(/\r?\n/);
+      const out: string[] = [];
+      let para: string[] = [];
+
+      const flushPara = () => {
+        if (para.length) {
+          out.push(`<p>${para.join("<br>")}</p>`);
+          para = [];
+        }
+      };
+
+      for (const lnRaw of lines) {
+        const ln = lnRaw.trimEnd();
+
+        const h = ln.match(/^#{1,6}\s+(.*)$/);
+        if (h) {
+          flushPara();
+          const lvl = Math.min(h[0].indexOf(" "), 6);
+          out.push(`<h${lvl + 2}>${h[1]}</h${lvl + 2}>`);
+          continue;
+        }
+
+        if (/^\s*[\*\-]\s+/.test(ln) || /^\s*\d+[\.\)]\s+/.test(ln)) {
+          flushPara();
+          out.push(`<li>${ln.replace(/^\s*([\*\-]|\d+[\.\)])\s+/, "")}</li>`);
+          continue;
+        }
+
+        if (!ln.trim()) {
+          flushPara();
+          continue;
+        }
+
+        para.push(ln);
+      }
+      flushPara();
+      html = out.join("");
+      html = html.replace(/(?:<li>.*?<\/li>)+/gs, (m) => {
+        const useOl = /^\s*\d/.test(m);
+        return `<${useOl ? "ol" : "ul"}>${m}</${useOl ? "ol" : "ul"}>`;
+      });
+      return html;
+    };
 
     const card = document.createElement("div");
+    const head = document.createElement("div");
+    const btnCopy = document.createElement("button");
+    const btnClose = document.createElement("button");
+    const body = document.createElement("div");
+
     card.className = "ai-result-card";
+    head.className = "ai-result-head";
+    body.className = "ai-result-text";
+    btnCopy.className = "ai-copy-btn";
+    btnClose.className = "ai-close-btn";
 
-    const head = Object.assign(document.createElement("div"), { className: "ai-result-head" });
-    const btnCopy = Object.assign(document.createElement("button"), {
-      className: "ai-copy-btn",
-      textContent: "Copy",
-    });
-    btnCopy.onclick = () => navigator.clipboard.writeText(result);
-    const btnClose = Object.assign(document.createElement("button"), {
-      className: "ai-close-btn",
-      textContent: "×",
-    });
-    btnClose.onclick = () => (resultSlot.innerHTML = "");
+    btnCopy.innerHTML = `<span class="label">Copy</span><img class="ai-btn-icon" src="${browser.runtime.getURL(
+      "copy.svg"
+    )}" />`;
+    btnClose.innerHTML = `<img class="ai-btn-icon" src="${browser.runtime.getURL(
+      "close.svg"
+    )}" />`;
+
+    btnCopy.onclick = async () => {
+      await navigator.clipboard.writeText(raw);
+      const lbl = btnCopy.querySelector(".label") as HTMLElement;
+      lbl.textContent = "Copied";
+      setTimeout(() => (lbl.textContent = "Copy"), 1000);
+    };
+    btnClose.onclick = () => {
+      resultSlot.innerHTML = "";
+    };
+
+    body.innerHTML = toHTML(raw);
+
     head.append(btnCopy, btnClose);
-
-    const pre = Object.assign(document.createElement("pre"), {
-      className: "ai-result-text",
-      textContent: result,
-    });
-    card.append(head, pre);
+    card.append(head, body);
     resultSlot.append(card);
   }
-
-  /* receive from background */
   browser.runtime.onMessage.addListener((msg) => {
     if (msg?.type === "summarizer-result" && msg.videoId === getVid()) {
       showResult(msg.result);
     }
   });
 
-  box.append(controls, inputWrap);
+  box.append(controls, wrap);
   return box;
 }
 
-/*───────────────────────── mount & reset ──────────────────────────────*/
-export async function mountSummarizer() {
+export async function mountSummarizer(): Promise<void> {
   if (document.getElementById("ai-video-summarizer")) return;
   const [lang, det] = await Promise.all([
     getSetting(LANG_KEY, "en"),
     getSetting(DETAIL_KEY, "detailed"),
   ]);
-  const rel = document.querySelector<HTMLDivElement>("#related.style-scope.ytd-watch-flexy");
-  if (rel) rel.insertAdjacentElement("afterbegin", createSummarizer(lang, det));
-  else setTimeout(mountSummarizer, 1000);
-}
-export function resetSummarizerControls() {
-  document.getElementById("ai-video-summarizer")?.remove();
+  const sec = document.querySelector<HTMLDivElement>(
+    "#secondary-inner.style-scope.ytd-watch-flexy"
+  );
+
+  if (sec) {
+    const panel = createSummarizer(lang, det);
+    sec.insertBefore(panel, sec.firstChild);
+  } else {
+    setTimeout(mountSummarizer, 500);
+  }
 }
 
-/* bootstrap */
+export function resetSummarizerControls(): void {
+  document.getElementById("ai-video-summarizer")?.remove();
+}
 document.addEventListener("DOMContentLoaded", () => void mountSummarizer());

@@ -1,4 +1,9 @@
 /*──────────────────────── AI-Summarizer (base) ────────────────────────*/
+#ai-video-summarizer {
+  order: -9999;
+  z-index: 1;
+}
+
 .ai-summarizer-container {
   background-color: #0f0f0f;
   border-radius: 12px;
@@ -270,7 +275,7 @@
   font-size: 16px;
   font-weight: bold;
   line-height: 14px;
-  padding: 2px 8px;
+  padding: 2px 4px;
 }
 
 .ai-result-text {
@@ -278,4 +283,66 @@
   font-family: inherit;
   font-size: 14px;
   color: #e0e0e0;
+}
+
+.ai-btn-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+}
+
+.ai-result-card {
+  background: #161616;
+  border: 1px solid #333;
+  padding: 0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+}
+.ai-result-head {
+  flex: 0 0 auto; /* НЕ прокручивается */
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  background: #161616;
+  position: sticky;
+  top: 0;
+}
+.ai-result-text {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+.ai-copy-btn,
+.ai-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* toolbar отделяем лёгкой тенью + градиент */
+.ai-result-head {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(#161616 0%, #161616ee 100%);
+}
+
+/* списки и выделения */
+.ai-result-text ul {
+  margin: 0 0 8px 18px;
+  padding: 0;
+}
+.ai-result-text li {
+  list-style: disc;
+  margin: 4px 0;
+}
+.ai-result-text strong {
+  color: #ffd54d;
+  font-weight: 600;
 }
