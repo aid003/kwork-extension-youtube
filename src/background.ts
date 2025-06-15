@@ -28,28 +28,41 @@ async function postToBackend(req: SummarizerRequest, transcript: string) {
   const payload = { ...req, transcript, ts: Date.now() };
   console.log("[BG] ➜ backend", payload);
 
+  let answer = "";
+
   try {
     const r = await fetch("http://localhost:7392/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data: BackendResponse = await r.json();
+
+    const data: BackendResponse | { ok?: false; error?: string } =
+      await r.json();
     console.log("[BG] backend response", data);
 
-    /* рассылаем результат всем вкладкам YouTube */
-    const tabs = await browser.tabs.query({ url: "*://*.youtube.com/*" });
-    for (const t of tabs) {
-      if (t.id)
-        browser.tabs.sendMessage(t.id, {
-          type: "summarizer-result",
-          videoId: req.videoId,
-          button: req.button,
-          result: data.result,
-        });
+    if (r.ok && (data as BackendResponse).result) {
+      answer = (data as BackendResponse).result;
+    } else {
+      console.warn("[BG] backend not-ok:", data);
+      answer =
+        "⚠️ Server of the extension is temporarily unavailable (code 3946).";
     }
   } catch (err) {
     console.error("[BG] backend error:", err);
+    answer =
+      "⚠️ Server of the extension is temporarily unavailable (code 3946).";
+  }
+
+  const tabs = await browser.tabs.query({ url: "*://*.youtube.com/*" });
+  for (const t of tabs) {
+    if (t.id)
+      browser.tabs.sendMessage(t.id, {
+        type: "summarizer-result",
+        videoId: req.videoId,
+        button: req.button,
+        result: answer,
+      });
   }
 }
 
