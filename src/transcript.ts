@@ -1,4 +1,3 @@
-//  src/transcript.ts 
 import browser from "webextension-polyfill";
 import { logT, sleep, getVid } from "./utils";
 
@@ -10,7 +9,6 @@ function injectStealthCSS(): void {
   const st = document.createElement("style");
   st.id = HIDDEN_CSS_ID;
   st.textContent = `
-    /* выносим панель из потока, делаем невидимой */
     .ai-stealth-transcript{
       position:fixed!important;
       top:0;left:0;
@@ -111,7 +109,6 @@ export class TranscriptSession {
 
     let prev = 0;
     for (let i = 0; i < 20; i++) {
-      // максимум ~2-3 секунды
       list.scrollTo({ top: list.scrollHeight });
       await sleep(120);
       const curr = list.querySelectorAll(

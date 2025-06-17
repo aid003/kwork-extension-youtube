@@ -1,4 +1,3 @@
-/*──────────────────────── AI-Summarizer (base) ────────────────────────*/
 #ai-video-summarizer {
   order: -9999;
   z-index: 1;
@@ -27,7 +26,6 @@
   flex-wrap: wrap;
 }
 
-/*──────────────────────── dropdown ──────────────────────────*/
 .ai-dropdown {
   position: relative;
   display: inline-block;
@@ -127,7 +125,6 @@
   text-align: center;
 }
 
-/*──────────────────────── input + spinner ─────────────────*/
 .ai-input-container {
   position: relative;
   display: flex;
@@ -198,7 +195,6 @@
   }
 }
 
-/*──────────────────────── buttons (mode) ──────────────────*/
 .ai-button {
   background: #1e1e1e;
   color: #fff;
@@ -234,7 +230,6 @@
   justify-content: center;
 }
 
-/*──────────────────────── backend result card ─────────────*/
 .ai-result-slot {
   width: 100%;
   margin-top: 8px;
@@ -302,7 +297,7 @@
   max-height: 300px;
 }
 .ai-result-head {
-  flex: 0 0 auto; /* НЕ прокручивается */
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -328,13 +323,11 @@
   gap: 4px;
 }
 
-/* toolbar отделяем лёгкой тенью + градиент */
 .ai-result-head {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
   background: linear-gradient(#161616 0%, #161616ee 100%);
 }
 
-/* списки и выделения */
 .ai-result-text ul {
   margin: 0 0 8px 18px;
   padding: 0;

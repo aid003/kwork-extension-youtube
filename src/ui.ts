@@ -1,11 +1,3 @@
-/* ───────────────────────────────  src/ui.ts  ───────────────────────────────
- * Главный UI-модуль расширения. Панель «Video Summarizer» поддерживает:
- *   • Summary / Timestamps / Question-запросы
- *   • одинаковый блок вывода для всех ответов
- *   • отправку вопроса по клику и клавишей Enter
- *   • корректную обработку ошибок с остановкой спиннера
- * ------------------------------------------------------------------------- */
-
 import browser from "webextension-polyfill";
 import { startTranscript } from "./transcript";
 import { getVid } from "./utils";
@@ -23,7 +15,6 @@ import {
 export type { DropdownOption } from "./ui-core";
 export { languages, detailLevels } from "./ui-core";
 
-/*────────────────────────── UI-панель ──────────────────────────*/
 export function createSummarizer(
   langInit: string,
   detailInit: string,
@@ -32,7 +23,6 @@ export function createSummarizer(
   let currentLang = langInit;
   let currentDetail = detailInit;
 
-  /*──── контейнер + заголовок ────*/
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
@@ -43,11 +33,9 @@ export function createSummarizer(
     }),
   );
 
-  /*──── блок управления ────*/
   const controls = document.createElement("div");
   controls.className = "ai-summarizer-controls";
 
-  /* row 1: язык + детализация */
   const row1 = Object.assign(document.createElement("div"), {
     className: "ai-controls-row",
   });
@@ -73,7 +61,6 @@ export function createSummarizer(
   );
   controls.append(row1);
 
-  /* row 2: кнопки Summarize / Timestamps */
   const row2 = Object.assign(document.createElement("div"), {
     className: "ai-controls-row",
   });
@@ -101,12 +88,10 @@ export function createSummarizer(
   row2.append(btnSum, btnTim);
   controls.append(row2);
 
-  /* слот для результата */
   const resultSlot = document.createElement("div");
   resultSlot.className = "ai-result-slot";
   controls.append(resultSlot);
 
-  /* input «Ask about the video…» + спиннер */
   const wrap = document.createElement("div");
   wrap.className = "ai-input-container";
   const spinner = document.createElement("div");
@@ -122,7 +107,6 @@ export function createSummarizer(
   )}" />`;
   wrap.append(spinner, input, btnSend);
 
-  /* helpers beginLoad / endLoad / postReq */
   const beginLoad = (txt: string) => {
     spinner.classList.add("visible");
     input.disabled = true;
@@ -148,7 +132,6 @@ export function createSummarizer(
       query: q,
     });
 
-  /*──────────────── отправка вопроса ────────────────*/
   const sendQuestion = () => {
     const q = input.value.trim();
     if (!q) return;
@@ -164,7 +147,6 @@ export function createSummarizer(
     }
   });
 
-  /*──────────────── клики Summarize / Timestamps ────────────────*/
   box.addEventListener("click", (e) => {
     const tgt = (e.target as HTMLElement).closest(".ai-button");
     if (!tgt) return;
@@ -180,7 +162,6 @@ export function createSummarizer(
     }
   });
 
-  /*──────────────── получение ответа ────────────────*/
   browser.runtime.onMessage.addListener((msg) => {
     if (msg?.type === "summarizer-result" && msg.videoId === getVid()) {
       endLoad();
@@ -192,7 +173,6 @@ export function createSummarizer(
   return box;
 }
 
-/*────────────────── mount / reset / auto-mount ──────────────────*/
 export async function mountSummarizer(): Promise<void> {
   if (document.getElementById("ai-video-summarizer")) return;
 

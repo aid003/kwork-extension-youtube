@@ -50,7 +50,6 @@ export function setSetting(k: string, v: string) {
   void browser.storage.local.set({ [k]: v });
 }
 
-/*──────────────────── dropdown-компонент ─────────────────────*/
 export function createDropdown(
   opts: DropdownOption[],
   init: string,
@@ -136,14 +135,12 @@ export function createDropdown(
   return dd;
 }
 
-/*──────────────────────── util-helpers ───────────────────────*/
 export const escapeHTML = (s: string) =>
   s.replace(
     /[&<>]/g,
     (c) => (({ "&": "&amp;", "<": "&lt;", ">": "&gt;" } as any)[c]),
   );
 
-/** markdown-like → HTML (summary / Q&A) */
 export function toHTML(txt: string): string {
   let html = escapeHTML(txt).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 
@@ -191,7 +188,6 @@ export function toHTML(txt: string): string {
   return html;
 }
 
-/*──────────────────────── CSS (one-shot inject) ───────────────────*/
 function ensureStyle() {
   if (document.getElementById("ai-ts-style")) return;
   const css = `
@@ -236,7 +232,6 @@ function ensureStyle() {
   document.head.append(style);
 }
 
-/*───────────────────── renderer карточки ─────────────────────*/
 export function showResultCard(resultSlot: HTMLElement, raw: string): void {
   ensureStyle();
   resultSlot.innerHTML = "";
@@ -285,7 +280,6 @@ export function showResultCard(resultSlot: HTMLElement, raw: string): void {
     return;
   }
 
-  /* ── Основной режим (summary / Q&A) ── */
   const card = document.createElement("div");
   const head = document.createElement("div");
   const btnCopy = document.createElement("button");
