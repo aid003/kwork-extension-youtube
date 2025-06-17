@@ -204,11 +204,12 @@
   color: #fff;
   border: none;
   cursor: pointer;
-  padding: 8px 16px 8px 24px;
+  padding: 8px 16px;
   border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 3px;
   height: 36px;
   transition: background-color 0.2s;
 }
@@ -281,7 +282,7 @@
 .ai-result-text {
   white-space: pre-wrap;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 17px;
   color: #e0e0e0;
 }
 
@@ -317,7 +318,7 @@
   padding: 12px;
   white-space: pre-wrap;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 17px;
   color: #e0e0e0;
 }
 .ai-copy-btn,

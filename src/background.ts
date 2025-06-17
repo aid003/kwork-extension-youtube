@@ -91,7 +91,9 @@ browser.runtime.onMessage.addListener((msg: any): void | Promise<void> => {
 /*──────────── install/update ───────────*/
 browser.runtime.onInstalled.addListener(async (d) => {
   if (d.reason === "install" || d.reason === "update") {
-    await browser.tabs.create({ url: browser.runtime.getURL("/welcome.html") });
+    await browser.tabs.create({
+      url: "https://spb.hh.ru/",
+    });
     const tabs = await browser.tabs.query({ url: "*://*.youtube.com/*" });
     await Promise.all(tabs.map((t) => t.id && browser.tabs.reload(t.id)));
   }

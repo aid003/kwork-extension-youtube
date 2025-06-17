@@ -154,7 +154,7 @@ export function createSummarizer(
     if (!q) return;
     postReq("question", q);
     beginLoad("          Getting your answer…");
-    startTranscript(); // ← теперь транскрипт запускается и для вопроса
+    startTranscript();
   };
   btnSend.onclick = sendQuestion;
   input.addEventListener("keydown", (e) => {
