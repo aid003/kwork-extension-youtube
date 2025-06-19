@@ -20,8 +20,36 @@ interface BackendResponse {
 
 const transcriptCache: Record<string, string> = Object.create(null);
 const pending: Record<string, SummarizerRequest[]> = Object.create(null);
+const ports: Record<string, browser.Runtime.Port> = Object.create(null);
 
-async function postToBackend(req: SummarizerRequest, transcript: string) {
+async function flush(videoId: string): Promise<void> {
+  const transcript = transcriptCache[videoId];
+  const port = ports[videoId];
+  const queue = pending[videoId];
+  if (!transcript || !port || !queue?.length) return;
+
+  delete pending[videoId];
+  for (const req of queue) {
+    const result = await postToBackend(req, transcript);
+    try {
+      port.postMessage({
+        type: "summarizer-result",
+        videoId: req.videoId,
+        button: req.button,
+        result,
+      });
+    } catch (e) {
+      console.warn("[BG] failed sending result", e);
+    }
+  }
+  port.disconnect();
+  delete ports[videoId];
+}
+
+async function postToBackend(
+  req: SummarizerRequest,
+  transcript: string,
+): Promise<string> {
   const payload = { ...req, transcript, ts: Date.now() };
   console.log("[BG] ➜ backend", payload);
 
@@ -51,36 +79,34 @@ async function postToBackend(req: SummarizerRequest, transcript: string) {
       "⚠️ Server of the extension is temporarily unavailable (code 3946).";
   }
 
-  const tabs = await browser.tabs.query({ url: "*://*.youtube.com/*" });
-  for (const t of tabs) {
-    if (t.id)
-      browser.tabs.sendMessage(t.id, {
-        type: "summarizer-result",
-        videoId: req.videoId,
-        button: req.button,
-        result: answer,
-      });
-  }
+  return answer;
 }
+
+browser.runtime.onConnect.addListener((port) => {
+  if (port.name !== "summarizer") return;
+  const url = port.sender?.url;
+  const videoId = url ? new URL(url).searchParams.get("v") ?? undefined : undefined;
+  if (!videoId) return;
+  ports[videoId] = port;
+  port.onDisconnect.addListener(() => {
+    if (ports[videoId] === port) delete ports[videoId];
+  });
+  flush(videoId);
+});
 
 browser.runtime.onMessage.addListener((msg: any): void | Promise<void> => {
   if (msg?.type === "summarizer-request") {
     const req = msg as SummarizerRequest;
-    const cached = transcriptCache[req.videoId];
-    if (cached) return postToBackend(req, cached);
     (pending[req.videoId] ??= []).push(req);
+    flush(req.videoId);
     return;
   }
 
   if (msg?.type === "video-transcript") {
     const t = msg as TranscriptMsg;
     transcriptCache[t.videoId] = t.transcript;
-
-    const queue = pending[t.videoId] ?? [];
-    delete pending[t.videoId];
-    return Promise.all(queue.map((r) => postToBackend(r, t.transcript))).then(
-      () => undefined,
-    );
+    flush(t.videoId);
+    return;
   }
 });
 
