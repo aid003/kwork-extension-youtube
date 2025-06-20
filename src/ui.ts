@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import browser from "webextension-polyfill";
 import { startTranscript } from "./transcript";
 import { getVid } from "./utils";
@@ -22,8 +23,34 @@ export function createSummarizer(
   let mode: "summarize" | "timestamps" | "question" | null = null;
   let currentLang = langInit;
   let currentDetail = detailInit;
-  let activePort: browser.Runtime.Port | null = null;
 
+  let activePort: browser.Runtime.Port;
+
+  const initPort = () => {
+    activePort = browser.runtime.connect({ name: "summarizer" });
+
+    const pingTimer = setInterval(() => {
+      try {
+        activePort.postMessage({ type: "ping" });
+      } catch {}
+    }, 25_000);
+
+    activePort.onDisconnect.addListener(() => {
+      clearInterval(pingTimer);
+      initPort();
+    });
+
+    activePort.onMessage.addListener((msg) => {
+      if (msg?.type === "summarizer-result" && msg.videoId === getVid()) {
+        endLoad();
+        showResultCard(resultSlot, String(msg.result ?? "⚠️ Unknown error"));
+      }
+    });
+  };
+
+  initPort();
+
+  /* ───────────── UI ───────────── */
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
@@ -120,11 +147,12 @@ export function createSummarizer(
     input.value = "";
     btnSend.classList.remove("hidden");
   };
+
   const postReq = (
     btn: "summarize" | "timestamps" | "question",
     q: string | null,
   ) => {
-    browser.runtime.sendMessage({
+    activePort.postMessage({
       type: "summarizer-request",
       videoId: getVid(),
       button: btn,
@@ -132,22 +160,9 @@ export function createSummarizer(
       detail: currentDetail,
       query: q,
     });
-    try {
-      activePort?.disconnect();
-    } catch {
-      /* ignore */
-    }
-    activePort = browser.runtime.connect({ name: "summarizer" });
-    activePort.onMessage.addListener((msg) => {
-      if (msg?.type === "summarizer-result" && msg.videoId === getVid()) {
-        endLoad();
-        showResultCard(resultSlot, String(msg.result ?? "⚠️ Unknown error"));
-        activePort?.disconnect();
-        activePort = null;
-      }
-    });
   };
 
+  /* question flow */
   const sendQuestion = () => {
     const q = input.value.trim();
     if (!q) return;

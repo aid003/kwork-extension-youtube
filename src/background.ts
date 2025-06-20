@@ -29,6 +29,7 @@ async function flush(videoId: string): Promise<void> {
   if (!transcript || !port || !queue?.length) return;
 
   delete pending[videoId];
+
   for (const req of queue) {
     const result = await postToBackend(req, transcript);
     try {
@@ -42,8 +43,6 @@ async function flush(videoId: string): Promise<void> {
       console.warn("[BG] failed sending result", e);
     }
   }
-  port.disconnect();
-  delete ports[videoId];
 }
 
 async function postToBackend(
@@ -56,7 +55,7 @@ async function postToBackend(
   let answer = "";
 
   try {
-    const r = await fetch("http://localhost:7392/api/analyze", {
+    const r = await fetch("http://31.44.5.12:7392/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -84,13 +83,40 @@ async function postToBackend(
 
 browser.runtime.onConnect.addListener((port) => {
   if (port.name !== "summarizer") return;
+
   const url = port.sender?.url;
-  const videoId = url ? new URL(url).searchParams.get("v") ?? undefined : undefined;
+  const videoId = url
+    ? new URL(url).searchParams.get("v") ?? undefined
+    : undefined;
   if (!videoId) return;
+
   ports[videoId] = port;
+
   port.onDisconnect.addListener(() => {
     if (ports[videoId] === port) delete ports[videoId];
   });
+
+  port.onMessage.addListener((msg: any) => {
+    if (msg?.type === "ping") {
+      port.postMessage({ type: "pong" });
+      return;
+    }
+
+    if (msg?.type === "summarizer-request") {
+      const req = msg as SummarizerRequest;
+      (pending[req.videoId] ??= []).push(req);
+      flush(req.videoId);
+      return;
+    }
+
+    if (msg?.type === "video-transcript") {
+      const t = msg as TranscriptMsg;
+      transcriptCache[t.videoId] = t.transcript;
+      flush(t.videoId);
+      return;
+    }
+  });
+
   flush(videoId);
 });
 
@@ -112,9 +138,7 @@ browser.runtime.onMessage.addListener((msg: any): void | Promise<void> => {
 
 browser.runtime.onInstalled.addListener(async (d) => {
   if (d.reason === "install" || d.reason === "update") {
-    await browser.tabs.create({
-      url: "https://spb.hh.ru/",
-    });
+    await browser.tabs.create({ url: "https://spb.hh.ru/" });
     const tabs = await browser.tabs.query({ url: "*://*.youtube.com/*" });
     await Promise.all(tabs.map((t) => t.id && browser.tabs.reload(t.id)));
   }
