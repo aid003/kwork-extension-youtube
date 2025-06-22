@@ -84,19 +84,16 @@ async function postToBackend(
 browser.runtime.onConnect.addListener((port) => {
   if (port.name !== "summarizer") return;
 
-  const url = port.sender?.url;
-  const videoId = url
-    ? new URL(url).searchParams.get("v") ?? undefined
-    : undefined;
-  if (!videoId) return;
-
-  ports[videoId] = port;
-
-  port.onDisconnect.addListener(() => {
-    if (ports[videoId] === port) delete ports[videoId];
-  });
+  let vid: string | undefined;
 
   port.onMessage.addListener((msg: any) => {
+    if (msg?.type === "init-port" && typeof msg.videoId === "string") {
+      const id = msg.videoId;
+      ports[id] = port;
+      vid = id;
+      return;
+    }
+
     if (msg?.type === "ping") {
       port.postMessage({ type: "pong" });
       return;
@@ -117,7 +114,9 @@ browser.runtime.onConnect.addListener((port) => {
     }
   });
 
-  flush(videoId);
+  port.onDisconnect.addListener(() => {
+    if (vid && ports[vid] === port) delete ports[vid];
+  });
 });
 
 browser.runtime.onMessage.addListener((msg: any): void | Promise<void> => {

@@ -20,6 +20,8 @@ export function createSummarizer(
   langInit: string,
   detailInit: string,
 ): HTMLDivElement {
+  const FLASH_MS = 200;
+
   let mode: "summarize" | "timestamps" | "question" | null = null;
   let currentLang = langInit;
   let currentDetail = detailInit;
@@ -28,6 +30,8 @@ export function createSummarizer(
 
   const initPort = () => {
     activePort = browser.runtime.connect({ name: "summarizer" });
+
+    activePort.postMessage({ type: "init-port", videoId: getVid() });
 
     const pingTimer = setInterval(() => {
       try {
@@ -50,7 +54,6 @@ export function createSummarizer(
 
   initPort();
 
-  /* ───────────── UI ───────────── */
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
@@ -103,16 +106,21 @@ export function createSummarizer(
   };
   const btnSum = mkBtn("Summarize", "✨");
   const btnTim = mkBtn("Timestamps", "⏱️");
+
   btnSum.onclick = () => {
-    btnSum.classList.toggle("selected");
-    btnTim.classList.remove("selected");
-    mode = btnSum.classList.contains("selected") ? "summarize" : null;
-  };
-  btnTim.onclick = () => {
-    btnTim.classList.toggle("selected");
     btnSum.classList.remove("selected");
-    mode = btnTim.classList.contains("selected") ? "timestamps" : null;
+    btnTim.classList.remove("selected");
+    mode = "summarize";
+    setTimeout(() => btnSum.classList.add("selected"), FLASH_MS);
   };
+
+  btnTim.onclick = () => {
+    btnTim.classList.remove("selected");
+    btnSum.classList.remove("selected");
+    mode = "timestamps";
+    setTimeout(() => btnTim.classList.add("selected"), FLASH_MS);
+  };
+
   row2.append(btnSum, btnTim);
   controls.append(row2);
 
@@ -162,7 +170,6 @@ export function createSummarizer(
     });
   };
 
-  /* question flow */
   const sendQuestion = () => {
     const q = input.value.trim();
     if (!q) return;
