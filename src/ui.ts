@@ -144,7 +144,7 @@ export function createSummarizer(
   const btnSend = document.createElement("button");
   btnSend.className = "ai-send-button";
   btnSend.innerHTML = `<img src="${browser.runtime.getURL(
-    "button-send.svg",
+    "arrow-send.svg",
   )}" />`;
   wrap.append(spinner, input, btnSend);
 

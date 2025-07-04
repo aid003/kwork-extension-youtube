@@ -28,6 +28,7 @@
         "settings.svg",
         "arrow-down.svg",
         "button-send.svg",
+        "arrow-send.svg",
         "close.svg",
         "copy.svg"
       ],
@@ -39,7 +40,8 @@
     "language.svg",
     "settings.svg",
     "arrow-down.svg",
-    "button-send.svg"
+    "button-send.svg",
+    "arrow-send.svg"
   ],
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["*://*.youtube.com/*"]

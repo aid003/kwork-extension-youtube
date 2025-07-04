@@ -47,23 +47,23 @@
 /* Light theme */
 .ai-theme-light {
   --ai-bg-primary: #ffffff;
-  --ai-bg-secondary: #f8f9fa;
+  --ai-bg-secondary: rgba(242, 242, 242, 1);
   --ai-bg-tertiary: #f1f3f4;
-  --ai-bg-input: #f8f9fa;
+  --ai-bg-input: rgba(242, 242, 242, 1);
   --ai-bg-input-disabled: #e8eaed;
-  --ai-bg-dropdown: #f8f9fa;
-  --ai-bg-dropdown-hover: #e8eaed;
-  --ai-bg-dropdown-selected: #dadce0;
-  --ai-bg-button: #f8f9fa;
-  --ai-bg-button-hover: #e8eaed;
+  --ai-bg-dropdown: rgba(242, 242, 242, 1);
+  --ai-bg-dropdown-hover: #e0e0e0;
+  --ai-bg-dropdown-selected: #d0d0d0;
+  --ai-bg-button: rgba(242, 242, 242, 1);
+  --ai-bg-button-hover: #e0e0e0;
   --ai-bg-button-selected: #f1c40f;
   --ai-bg-result: #f1f3f4;
   --ai-bg-result-head: #f1f3f4;
   --ai-bg-control-btn: #e8eaed;
   --ai-bg-control-btn-hover: #dadce0;
 
-  --ai-text-primary: #0f0f0f;
-  --ai-text-secondary: #5f6368;
+  --ai-text-primary: #000000;
+  --ai-text-secondary: #000000;
   --ai-text-tertiary: #80868b;
   --ai-text-input: #0f0f0f;
   --ai-text-input-disabled: #80868b;
@@ -72,12 +72,12 @@
   --ai-text-result: #202124;
   --ai-text-strong: #d97706;
 
-  --ai-border-primary: #dadce0;
+  --ai-border-primary: #c0c0c0;
   --ai-border-secondary: #e8eaed;
   --ai-border-scrollbar: #dadce0;
   --ai-border-scrollbar-hover: #bdc1c6;
 
-  --ai-shadow-primary: rgba(0, 0, 0, 0.1);
+  --ai-shadow-primary: rgba(0, 0, 0, 0.15);
   --ai-shadow-secondary: rgba(0, 0, 0, 0.2);
   --ai-shadow-result: rgba(0, 0, 0, 0.1);
 
@@ -102,6 +102,7 @@
   color: var(--ai-text-primary);
   font-family: "YouTube Sans", "Roboto", sans-serif;
   box-shadow: 0 0 5px var(--ai-shadow-primary);
+  border: 1px solid var(--ai-border-primary);
 }
 
 .ai-summarizer-header {
@@ -134,7 +135,13 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
+  font-weight: 500;
   justify-content: space-between;
+  transition: background-color 0.2s ease;
+}
+
+.ai-dropdown-button:hover {
+  background: var(--ai-bg-dropdown-hover);
 }
 .ai-dropdown-button .ai-icon {
   width: 12px;
@@ -243,22 +250,55 @@
   position: absolute;
   right: 8px;
   z-index: 2;
-  background: none;
+  background: var(--ai-accent-color);
   border: none;
   padding: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s;
+  transition: all 0.2s ease;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
 }
+
+.ai-send-button:hover {
+  background: var(--ai-accent-color);
+  transform: scale(1.05);
+}
+
 .ai-send-button.hidden {
   opacity: 0;
   pointer-events: none;
 }
+
 .ai-send-button img {
-  width: 30px;
-  height: 30px;
+  width: 14px;
+  height: 14px;
+  filter: brightness(0);
+}
+
+/* Черные иконки для светлой темы */
+.ai-theme-light .ai-dropdown-button img {
+  filter: brightness(0);
+}
+
+.ai-theme-light .ai-send-button {
+  background: #6b7280;
+}
+
+.ai-theme-light .ai-send-button:hover {
+  background: #4b5563;
+}
+
+.ai-theme-light .ai-send-button img {
+  filter: brightness(0) invert(1);
+  opacity: 1;
+}
+
+.ai-theme-light .ai-btn-icon {
+  filter: brightness(0);
 }
 
 .ai-loading-spinner {
