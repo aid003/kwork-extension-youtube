@@ -154,8 +154,34 @@ export const escapeHTML = (s: string) =>
     (c) => (({ "&": "&amp;", "<": "&lt;", ">": "&gt;" } as any)[c]),
   );
 
+// Функция для очистки markdown разметки
+export function cleanMarkdown(text: string): string {
+  return (
+    text
+      // Убираем заголовки
+      .replace(/^#{1,6}\s+/gm, "")
+      // Убираем жирный текст
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      // Убираем курсив
+      .replace(/\*(.+?)\*/g, "$1")
+      // Убираем маркеры списков
+      .replace(/^\s*[\*\-]\s+/gm, "")
+      // Убираем нумерованные списки
+      .replace(/^\s*\d+[\.\)]\s+/gm, "")
+      // Убираем ссылки, оставляя только текст
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Убираем код
+      .replace(/`([^`]+)`/g, "$1")
+      // Убираем блоки кода
+      .replace(/```[\s\S]*?```/g, "")
+      // Убираем лишние переносы строк
+      .replace(/\n\s*\n\s*\n/g, "\n\n")
+      .trim()
+  );
+}
+
 export function toHTML(txt: string): string {
-  let html = escapeHTML(txt).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  let html = escapeHTML(txt).replace(/\*\*(.+?)\*\*/g, "$1");
 
   const lines = html.split(/\r?\n/);
   const out: string[] = [];
@@ -312,7 +338,8 @@ export function showResultCard(resultSlot: HTMLElement, raw: string): void {
   )}" />`;
 
   btnCopy.onclick = async () => {
-    await navigator.clipboard.writeText(raw);
+    const cleanText = cleanMarkdown(raw);
+    await navigator.clipboard.writeText(cleanText);
     const lbl = btnCopy.querySelector(".label") as HTMLElement;
     lbl.textContent = "Copied";
     setTimeout(() => (lbl.textContent = "Copy"), 1000);

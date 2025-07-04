@@ -25,7 +25,7 @@
   --ai-text-button: #fff;
   --ai-text-button-selected: #000;
   --ai-text-result: #e0e0e0;
-  --ai-text-strong: #ffd54d;
+  --ai-text-strong: var(--ai-text-result);
 
   --ai-border-primary: #333;
   --ai-border-secondary: #4a4a4a;
@@ -70,7 +70,7 @@
   --ai-text-button: #0f0f0f;
   --ai-text-button-selected: #000;
   --ai-text-result: #202124;
-  --ai-text-strong: #d97706;
+  --ai-text-strong: var(--ai-text-result);
 
   --ai-border-primary: #c0c0c0;
   --ai-border-secondary: #e8eaed;
