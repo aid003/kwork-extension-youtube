@@ -3,7 +3,7 @@
  * Поддержка «временных меток»:
  *   • описания фикс-ширины 270 px, выровнены вправо
  *   • контейнер со скроллом (кастомный скроллбар)
- *   • распознаёт строки **с необязательным маркером списка** “- ” или “* ”
+ *   • распознаёт строки **с необязательным маркером списка** "- " или "* "
  * ------------------------------------------------------------------------ */
 
 import browser from "webextension-polyfill";
@@ -48,6 +48,19 @@ export async function getSetting<T>(k: string, def: T): Promise<T> {
 }
 export function setSetting(k: string, v: string) {
   void browser.storage.local.set({ [k]: v });
+}
+
+/*────────────────────── theme helpers ──────────────────────*/
+export function isYouTubeDarkTheme(): boolean {
+  // Проверяем наличие атрибута dark на html элементе
+  const html = document.documentElement;
+  return html.hasAttribute("dark");
+}
+
+export function applyThemeToElement(element: HTMLElement): void {
+  const isDark = isYouTubeDarkTheme();
+  element.classList.toggle("ai-theme-light", !isDark);
+  element.classList.toggle("ai-theme-dark", isDark);
 }
 
 export function createDropdown(
@@ -203,25 +216,25 @@ function ensureStyle() {
       background: transparent;
     }
     .ai-ts-wrap::-webkit-scrollbar-thumb {
-      background: #4a4a4a;
+      background: var(--ai-border-scrollbar);
       border-radius: 3px;
     }
     .ai-ts-wrap::-webkit-scrollbar-thumb:hover {
-      background: #5a5a5a;
+      background: var(--ai-border-scrollbar-hover);
     }
 
     .ai-ts-row  { display:flex; align-items:center; margin:4px 0; cursor:pointer; }
     .ai-ts-time {
       min-width:43px; height:26px; display:flex; align-items:center; justify-content:center;
       font-family:Roboto; font-weight:500; font-size:16px; line-height:100%;
-      color:#3B82F6; background:#699CF133;
-      border:1px solid #639EFF73; border-radius:5px; flex-shrink:0;
+      color:var(--ai-time-text); background:var(--ai-time-bg);
+      border:1px solid var(--ai-time-border); border-radius:5px; flex-shrink:0;
     }
     .ai-ts-desc {
       width:270px; margin-left:auto;
       padding:4px 8px;
       font-family:Roboto; font-weight:500; font-size:16px; line-height:100%;
-      background:#AFAFAF26; border:1px solid #ADADAD59; border-radius:5px; color:#fff;
+      background:var(--ai-desc-bg); border:1px solid var(--ai-desc-border); border-radius:5px; color:var(--ai-text-primary);
       display:flex; align-items:center;
     }
   `;

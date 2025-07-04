@@ -11,6 +11,7 @@ import {
   getSetting,
   createDropdown,
   showResultCard,
+  applyThemeToElement,
 } from "./ui-core";
 
 export type { DropdownOption } from "./ui-core";
@@ -57,6 +58,10 @@ export function createSummarizer(
   const box = document.createElement("div");
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
+
+  // Применяем тему к контейнеру
+  applyThemeToElement(box);
+
   box.appendChild(
     Object.assign(document.createElement("div"), {
       className: "ai-summarizer-header",
@@ -224,7 +229,10 @@ export async function mountSummarizer(): Promise<void> {
   );
 
   if (sec) {
-    sec.insertBefore(createSummarizer(lang, det), sec.firstChild);
+    const summarizer = createSummarizer(lang, det);
+    sec.insertBefore(summarizer, sec.firstChild);
+    // Применяем тему к новому экземпляру
+    applyThemeToElement(summarizer);
   } else {
     setTimeout(mountSummarizer, 500);
   }
@@ -234,4 +242,33 @@ export function resetSummarizerControls(): void {
   document.getElementById("ai-video-summarizer")?.remove();
 }
 
-document.addEventListener("DOMContentLoaded", () => void mountSummarizer());
+// Функция для обновления темы всех элементов расширения
+function updateExtensionTheme(): void {
+  const summarizer = document.getElementById("ai-video-summarizer");
+  if (summarizer) {
+    applyThemeToElement(summarizer);
+  }
+}
+
+// Отслеживаем изменения темы YouTube
+function setupThemeObserver(): void {
+  // Создаем наблюдатель за изменениями атрибутов html элемента
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === "attributes" && mutation.attributeName === "dark") {
+        updateExtensionTheme();
+      }
+    });
+  });
+
+  // Начинаем наблюдение за html элементом
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["dark"],
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  void mountSummarizer();
+  setupThemeObserver();
+});

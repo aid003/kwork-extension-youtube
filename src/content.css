@@ -1,20 +1,111 @@
+/* CSS Variables for theming */
+:root {
+  /* Dark theme (default) */
+  --ai-bg-primary: #0f0f0f;
+  --ai-bg-secondary: #1e1e1e;
+  --ai-bg-tertiary: #161616;
+  --ai-bg-input: #1e1e1e;
+  --ai-bg-input-disabled: #1a1a1a;
+  --ai-bg-dropdown: #1e1e1e;
+  --ai-bg-dropdown-hover: #3a3a3a;
+  --ai-bg-dropdown-selected: #4a4a4a;
+  --ai-bg-button: #1e1e1e;
+  --ai-bg-button-hover: #2a2a2a;
+  --ai-bg-button-selected: #e6b800;
+  --ai-bg-result: #161616;
+  --ai-bg-result-head: #161616;
+  --ai-bg-control-btn: #2a2a2a;
+  --ai-bg-control-btn-hover: #3a3a3a;
+
+  --ai-text-primary: #fff;
+  --ai-text-secondary: #e0e0e0;
+  --ai-text-tertiary: #a0a0a0;
+  --ai-text-input: #fff;
+  --ai-text-input-disabled: #888;
+  --ai-text-button: #fff;
+  --ai-text-button-selected: #000;
+  --ai-text-result: #e0e0e0;
+  --ai-text-strong: #ffd54d;
+
+  --ai-border-primary: #333;
+  --ai-border-secondary: #4a4a4a;
+  --ai-border-scrollbar: #4a4a4a;
+  --ai-border-scrollbar-hover: #5a5a5a;
+
+  --ai-shadow-primary: rgba(255, 255, 255, 0.3);
+  --ai-shadow-secondary: rgba(0, 0, 0, 0.5);
+  --ai-shadow-result: rgba(0, 0, 0, 0.6);
+
+  --ai-accent-color: #f1c40f;
+  --ai-time-bg: #699cf133;
+  --ai-time-border: #639eff73;
+  --ai-time-text: #3b82f6;
+  --ai-desc-bg: #afafaf26;
+  --ai-desc-border: #adadad59;
+}
+
+/* Light theme */
+.ai-theme-light {
+  --ai-bg-primary: #ffffff;
+  --ai-bg-secondary: #f8f9fa;
+  --ai-bg-tertiary: #f1f3f4;
+  --ai-bg-input: #f8f9fa;
+  --ai-bg-input-disabled: #e8eaed;
+  --ai-bg-dropdown: #f8f9fa;
+  --ai-bg-dropdown-hover: #e8eaed;
+  --ai-bg-dropdown-selected: #dadce0;
+  --ai-bg-button: #f8f9fa;
+  --ai-bg-button-hover: #e8eaed;
+  --ai-bg-button-selected: #f1c40f;
+  --ai-bg-result: #f1f3f4;
+  --ai-bg-result-head: #f1f3f4;
+  --ai-bg-control-btn: #e8eaed;
+  --ai-bg-control-btn-hover: #dadce0;
+
+  --ai-text-primary: #0f0f0f;
+  --ai-text-secondary: #5f6368;
+  --ai-text-tertiary: #80868b;
+  --ai-text-input: #0f0f0f;
+  --ai-text-input-disabled: #80868b;
+  --ai-text-button: #0f0f0f;
+  --ai-text-button-selected: #000;
+  --ai-text-result: #202124;
+  --ai-text-strong: #d97706;
+
+  --ai-border-primary: #dadce0;
+  --ai-border-secondary: #e8eaed;
+  --ai-border-scrollbar: #dadce0;
+  --ai-border-scrollbar-hover: #bdc1c6;
+
+  --ai-shadow-primary: rgba(0, 0, 0, 0.1);
+  --ai-shadow-secondary: rgba(0, 0, 0, 0.2);
+  --ai-shadow-result: rgba(0, 0, 0, 0.1);
+
+  --ai-accent-color: #f59e0b;
+  --ai-time-bg: #dbeafe;
+  --ai-time-border: #93c5fd;
+  --ai-time-text: #1d4ed8;
+  --ai-desc-bg: #f3f4f6;
+  --ai-desc-border: #d1d5db;
+}
+
 #ai-video-summarizer {
   order: -9999;
   z-index: 1;
 }
 
 .ai-summarizer-container {
-  background-color: #0f0f0f;
+  background-color: var(--ai-bg-primary);
   border-radius: 12px;
   padding: 20px;
   margin: 10px 0;
-  color: #fff;
+  color: var(--ai-text-primary);
   font-family: "YouTube Sans", "Roboto", sans-serif;
-  box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 5px var(--ai-shadow-primary);
 }
 
 .ai-summarizer-header {
-  color: #f1c40f;
+  color: var(--ai-accent-color);
   font-size: 18px;
   font-weight: 500;
   margin-bottom: 16px;
@@ -31,9 +122,9 @@
   display: inline-block;
 }
 .ai-dropdown-button {
-  background: #1e1e1e;
+  background: var(--ai-bg-dropdown);
   border: none;
-  color: #fff;
+  color: var(--ai-text-primary);
   padding: 0 16px;
   min-width: 105px;
   height: 23px;
@@ -69,11 +160,11 @@
   width: 205px;
   max-height: 300px;
   min-height: fit-content;
-  background: #1e1e1e;
+  background: var(--ai-bg-dropdown);
   border-radius: 12px;
   padding: 8px 0;
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 10px var(--ai-shadow-secondary);
   overflow-y: auto;
 }
 .ai-dropdown.active .ai-dropdown-content {
@@ -87,11 +178,11 @@
   background: transparent;
 }
 .ai-dropdown-content::-webkit-scrollbar-thumb {
-  background: #4a4a4a;
+  background: var(--ai-border-scrollbar);
   border-radius: 3px;
 }
 .ai-dropdown-content::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: var(--ai-border-scrollbar-hover);
 }
 
 .ai-dropdown-item {
@@ -100,27 +191,27 @@
   gap: 8px;
   padding: 8px 16px;
   font-size: 12px;
-  color: #e0e0e0;
+  color: var(--ai-text-secondary);
   cursor: pointer;
   border-radius: 8px;
 }
 .ai-dropdown-item:hover {
-  background: #3a3a3a;
+  background: var(--ai-bg-dropdown-hover);
 }
 .ai-dropdown-item.selected {
-  background: #4a4a4a;
+  background: var(--ai-bg-dropdown-selected);
 }
 .ai-dropdown-item .title {
   font-size: 12px;
-  color: #e0e0e0;
+  color: var(--ai-text-secondary);
 }
 .ai-dropdown-item .description {
   font-size: 10px;
-  color: #a0a0a0;
+  color: var(--ai-text-tertiary);
   margin-top: 2px;
 }
 .ai-dropdown-item .checkmark {
-  color: #e0e0e0;
+  color: var(--ai-text-secondary);
   width: 16px;
   text-align: center;
 }
@@ -132,20 +223,20 @@
 }
 .ai-input {
   width: 100%;
-  background: #1e1e1e;
+  background: var(--ai-bg-input);
   border: none;
   border-radius: 20px;
   padding: 8px 16px;
   padding-right: 45px;
-  color: #fff;
+  color: var(--ai-text-input);
   font-size: 14px;
 }
 .ai-input.loading {
   padding-left: 15px;
 }
 .ai-input:disabled {
-  color: #888;
-  background: #1a1a1a;
+  color: var(--ai-text-input-disabled);
+  background: var(--ai-bg-input-disabled);
 }
 
 .ai-send-button {
@@ -177,7 +268,7 @@
   width: 20px;
   height: 20px;
   border: 2px solid transparent;
-  border-top-color: #f1c40f;
+  border-top-color: var(--ai-accent-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   opacity: 0;
@@ -196,8 +287,8 @@
 }
 
 .ai-button {
-  background: #1e1e1e;
-  color: #fff;
+  background: var(--ai-bg-button);
+  color: var(--ai-text-button);
   border: none;
   cursor: pointer;
   padding: 8px 16px;
@@ -210,11 +301,11 @@
   transition: background-color 0.2s;
 }
 .ai-button:hover {
-  background: #2a2a2a;
+  background: var(--ai-bg-button-hover);
 }
 .ai-button.selected {
-  background: #e6b800;
-  color: #000;
+  background: var(--ai-bg-button-selected);
+  color: var(--ai-text-button-selected);
 }
 .ai-button .ai-icon {
   font-size: 16px;
@@ -236,14 +327,14 @@
 }
 
 .ai-result-card {
-  background: #161616;
-  border: 1px solid #333;
+  background: var(--ai-bg-result);
+  border: 1px solid var(--ai-border-primary);
   margin-bottom: 12px;
   padding: 12px;
   border-radius: 10px;
   max-height: 300px;
   overflow: auto;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 4px var(--ai-shadow-result);
 }
 
 .ai-result-head {
@@ -255,9 +346,9 @@
 
 .ai-copy-btn,
 .ai-close-btn {
-  background: #2a2a2a;
+  background: var(--ai-bg-control-btn);
   border: none;
-  color: #fff;
+  color: var(--ai-text-primary);
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
@@ -265,7 +356,7 @@
 }
 .ai-copy-btn:hover,
 .ai-close-btn:hover {
-  background: #3a3a3a;
+  background: var(--ai-bg-control-btn-hover);
 }
 .ai-close-btn {
   font-size: 16px;
@@ -278,7 +369,7 @@
   white-space: pre-wrap;
   font-family: inherit;
   font-size: 17px;
-  color: #e0e0e0;
+  color: var(--ai-text-result);
 }
 
 .ai-btn-icon {
@@ -288,8 +379,8 @@
 }
 
 .ai-result-card {
-  background: #161616;
-  border: 1px solid #333;
+  background: var(--ai-bg-result);
+  border: 1px solid var(--ai-border-primary);
   padding: 0;
   border-radius: 10px;
   display: flex;
@@ -302,8 +393,8 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 10px;
-  border-bottom: 1px solid #333;
-  background: #161616;
+  border-bottom: 1px solid var(--ai-border-primary);
+  background: var(--ai-bg-result-head);
   position: sticky;
   top: 0;
 }
@@ -314,7 +405,7 @@
   white-space: pre-wrap;
   font-family: inherit;
   font-size: 17px;
-  color: #e0e0e0;
+  color: var(--ai-text-result);
 }
 .ai-copy-btn,
 .ai-close-btn {
@@ -324,8 +415,11 @@
 }
 
 .ai-result-head {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
-  background: linear-gradient(#161616 0%, #161616ee 100%);
+  box-shadow: 0 2px 4px var(--ai-shadow-result);
+  background: linear-gradient(
+    var(--ai-bg-result-head) 0%,
+    var(--ai-bg-result-head) ee 100%
+  );
 }
 
 .ai-result-text ul {
@@ -337,6 +431,6 @@
   margin: 4px 0;
 }
 .ai-result-text strong {
-  color: #ffd54d;
+  color: var(--ai-text-strong);
   font-weight: 600;
 }
