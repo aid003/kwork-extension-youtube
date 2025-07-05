@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
 import browser from "webextension-polyfill";
 import { startTranscript } from "./transcript";
 import { getVid } from "./utils";
@@ -59,7 +60,6 @@ export function createSummarizer(
   box.id = "ai-video-summarizer";
   box.className = "ai-summarizer-container";
 
-  // Применяем тему к контейнеру
   applyThemeToElement(box);
 
   box.appendChild(
@@ -231,7 +231,6 @@ export async function mountSummarizer(): Promise<void> {
   if (sec) {
     const summarizer = createSummarizer(lang, det);
     sec.insertBefore(summarizer, sec.firstChild);
-    // Применяем тему к новому экземпляру
     applyThemeToElement(summarizer);
   } else {
     setTimeout(mountSummarizer, 500);
@@ -242,7 +241,6 @@ export function resetSummarizerControls(): void {
   document.getElementById("ai-video-summarizer")?.remove();
 }
 
-// Функция для обновления темы всех элементов расширения
 function updateExtensionTheme(): void {
   const summarizer = document.getElementById("ai-video-summarizer");
   if (summarizer) {
@@ -250,9 +248,7 @@ function updateExtensionTheme(): void {
   }
 }
 
-// Отслеживаем изменения темы YouTube
 function setupThemeObserver(): void {
-  // Создаем наблюдатель за изменениями атрибутов html элемента
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === "attributes" && mutation.attributeName === "dark") {
@@ -261,7 +257,6 @@ function setupThemeObserver(): void {
     });
   });
 
-  // Начинаем наблюдение за html элементом
   observer.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ["dark"],

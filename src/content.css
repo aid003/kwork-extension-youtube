@@ -1,6 +1,6 @@
-/* CSS Variables for theming */
+
 :root {
-  /* Dark theme (default) */
+
   --ai-bg-primary: #0f0f0f;
   --ai-bg-secondary: #1e1e1e;
   --ai-bg-tertiary: #161616;
@@ -44,7 +44,7 @@
   --ai-desc-border: #adadad59;
 }
 
-/* Light theme */
+
 .ai-theme-light {
   --ai-bg-primary: #ffffff;
   --ai-bg-secondary: rgba(242, 242, 242, 1);
@@ -279,7 +279,7 @@
   filter: brightness(0);
 }
 
-/* Черные иконки для светлой темы */
+
 .ai-theme-light .ai-dropdown-button img {
   filter: brightness(0);
 }
@@ -410,6 +410,17 @@
   font-family: inherit;
   font-size: 17px;
   color: var(--ai-text-result);
+  line-height: 1.6;
+}
+
+.ai-result-text p {
+  margin: 0 0 16px 0;
+  padding: 0;
+  text-indent: 0;
+}
+
+.ai-result-text p:last-child {
+  margin-bottom: 0;
 }
 
 .ai-btn-icon {
@@ -471,6 +482,6 @@
   margin: 4px 0;
 }
 .ai-result-text strong {
-  color: var(--ai-text-strong);
+  color: var(--ai-text-result);
   font-weight: 600;
 }

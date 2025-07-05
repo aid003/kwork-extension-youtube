@@ -1,14 +1,5 @@
-/* ───────────────────────────  src/ui-core.ts  ────────────────────────────
- * Общие константы, helpers и renderer для карточек результатов.
- * Поддержка «временных меток»:
- *   • описания фикс-ширины 270 px, выровнены вправо
- *   • контейнер со скроллом (кастомный скроллбар)
- *   • распознаёт строки **с необязательным маркером списка** "- " или "* "
- * ------------------------------------------------------------------------ */
-
 import browser from "webextension-polyfill";
 
-/*────────────────────── типы и константы ──────────────────────*/
 export interface DropdownOption {
   value: string;
   label: string;
@@ -38,7 +29,6 @@ export const detailLevels: DropdownOption[] = [
   },
 ];
 
-/*────────────────────── storage-helpers ──────────────────────*/
 export const LANG_KEY = "ai_lang";
 export const DETAIL_KEY = "ai_detail";
 
@@ -154,34 +144,25 @@ export const escapeHTML = (s: string) =>
     (c) => (({ "&": "&amp;", "<": "&lt;", ">": "&gt;" } as any)[c]),
   );
 
-// Функция для очистки markdown разметки
 export function cleanMarkdown(text: string): string {
-  return (
-    text
-      // Убираем заголовки
-      .replace(/^#{1,6}\s+/gm, "")
-      // Убираем жирный текст
-      .replace(/\*\*(.+?)\*\*/g, "$1")
-      // Убираем курсив
-      .replace(/\*(.+?)\*/g, "$1")
-      // Убираем маркеры списков
-      .replace(/^\s*[\*\-]\s+/gm, "")
-      // Убираем нумерованные списки
-      .replace(/^\s*\d+[\.\)]\s+/gm, "")
-      // Убираем ссылки, оставляя только текст
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      // Убираем код
-      .replace(/`([^`]+)`/g, "$1")
-      // Убираем блоки кода
-      .replace(/```[\s\S]*?```/g, "")
-      // Убираем лишние переносы строк
-      .replace(/\n\s*\n\s*\n/g, "\n\n")
-      .trim()
-  );
+  return text
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/\*"(.+?)"\*/g, "$1")
+    .replace(/^\s*[\*\-]\s+/gm, "")
+    .replace(/^\s*\d+[\.\)]\s+/gm, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\n\s*\n\s*\n/g, "\n\n")
+    .trim();
 }
 
 export function toHTML(txt: string): string {
-  let html = escapeHTML(txt).replace(/\*\*(.+?)\*\*/g, "$1");
+  let html = escapeHTML(txt)
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*"(.+?)"\*/g, "<strong>$1</strong>");
 
   const lines = html.split(/\r?\n/);
   const out: string[] = [];
@@ -189,7 +170,15 @@ export function toHTML(txt: string): string {
 
   const flushPara = () => {
     if (para.length) {
-      out.push(`<p>${para.join("<br>")}</p>`);
+      const paragraphText = para.join(" ");
+      const firstSentenceMatch = paragraphText.match(/^([^.!?]+[.!?])/);
+      if (firstSentenceMatch) {
+        const firstSentence = firstSentenceMatch[1];
+        const restOfText = paragraphText.substring(firstSentence.length);
+        out.push(`<p><strong>${firstSentence}</strong>${restOfText}</p>`);
+      } else {
+        out.push(`<p><strong>${paragraphText}</strong></p>`);
+      }
       para = [];
     }
   };
@@ -275,9 +264,8 @@ export function showResultCard(resultSlot: HTMLElement, raw: string): void {
   ensureStyle();
   resultSlot.innerHTML = "";
 
-  /* ── Парсер временных меток ── */
   const lines = raw.trim().split(/\r?\n/);
-  const tsRe = /^\s*(?:[\-\*]\s*)?\[(\d{1,2}:\d{2})]\s*(.+)$/; // ← допускает «- » или «* »
+  const tsRe = /^\s*(?:[\-\*]\s*)?\[(\d{1,2}:\d{2})]\s*(.+)$/;
   const isTS = lines.filter((l) => l.trim()).every((l) => tsRe.test(l));
 
   if (isTS) {
